@@ -1,0 +1,6 @@
+{
+	"services": {
+		"Rootpress\\services\\RestJsonApiService": false,
+		"Rootpress\\services\\VisualComposerService": false
+	}
+}
