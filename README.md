@@ -1,4 +1,4 @@
-# Rootpress alpha 0.1.0
+# Rootpress alpha 0.2.0
 
 Rootpress is a Wordpress Skeleton to start building wordpress custom site using an MVC-like pattern. 
 
