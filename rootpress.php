@@ -27,7 +27,7 @@ class Rootpress
     public static $configuration = [];
 
     // Current theme namespace guess during the load of rootpress configuration
-    public static $currentThemeNamespace = '';
+    public static $currentThemeNamespace = null;
 
     // Associative array which containing the name of all customs types and theirs associates models
     public static $linkPostTypeToClass = [];
@@ -45,29 +45,25 @@ class Rootpress
 
         // Controllers System
         add_filter('template_include', ['Rootpress\Rootpress', 'controllersSystem'], 99);
-        add_action('init', ['Rootpress\Rootpress', 'declareControllersRouter'], 99);
+        self::declareControllersRouter();
 
         // Models System
         add_action('init', ['Rootpress\Rootpress', 'modelsSystem'], 99);
         add_filter('rootpress_before_hydrate', ['Rootpress\Rootpress', 'getEntityFromWPPost'], 99);
 
         // Launch Rootpress Services according to rootpress configuration
-        self::loadServices(); 
+        self::loadServices();
 
         /*
-         Services
          Finish Skeleton
          Views
          Templates
-         CSS/SCSS
-         Hydratator dans Utils ?
         */
     }
 
     /**
      * Load Rootpress Config  
      * @filter rootpress_config_file_location Allow to override the location of the rootpress config file
-     * @filter rootpress_current_theme_namespace Allow to override the actual theme/child theme namespace
      */
     public static function loadRootpressConfiguration() {
 
@@ -81,10 +77,19 @@ class Rootpress
             self::$configuration = array_replace_recursive(self::$configuration, json_decode(file_get_contents($defaultRootpressConfigFileLocation), true));
         }
 
-        // Get current theme namespace
-        $currentTheme = wp_get_theme();
-        self::$currentThemeNamespace = (is_object($currentTheme)) ? str_replace(' ', '', $currentTheme->get('Name')) : 'CustomTheme';
-        self::$currentThemeNamespace = apply_filters('rootpress_current_theme_namespace', self::$currentThemeNamespace);
+    }
+
+    /**
+     * Getter to get the current theme namespace
+     * @filter rootpress_current_theme_namespace Allow to override the actual theme/child theme namespace
+     */
+    public static function getCurrentThemeNamespace() {
+        if(!isset(self::$currentThemeNamespace)) {
+            $currentTheme = wp_get_theme();
+            self::$currentThemeNamespace = (is_object($currentTheme)) ? str_replace(' ', '', $currentTheme->get('Name')) : 'CustomTheme';
+            self::$currentThemeNamespace = apply_filters('rootpress_current_theme_namespace', self::$currentThemeNamespace);
+        }
+        return self::$currentThemeNamespace;
     }
 
     /**
@@ -96,7 +101,7 @@ class Rootpress
         // Associative array of namespace and associate root folder
         $namespaces = [
             __NAMESPACE__          => plugin_dir_path( __FILE__ ),
-            self::$currentThemeNamespace => get_stylesheet_directory()
+            self::getCurrentThemeNamespace() => get_stylesheet_directory()
         ];
         // Allow developers to alterate the namespace list handle by this autoloader and declare the namespaces list as global to be use inside autoload function
         global $rootpress_namespaces_list;
@@ -144,7 +149,7 @@ class Rootpress
     public static function declareControllersRouter() {
 
         // Get list of controllers folders
-        $controllersDefaultFolderPaths = [get_stylesheet_directory() . '/controllers' => self::$currentThemeNamespace . '\controllers'];
+        $controllersDefaultFolderPaths = [get_stylesheet_directory() . '/controllers' => self::getCurrentThemeNamespace() . '\controllers'];
 
         //Load all controllers class and then start them
         self::loadFilesFromPaths('controller', $controllersDefaultFolderPaths, function($classPath){
@@ -165,8 +170,8 @@ class Rootpress
 
         // Get list of models folders
         $modelsDefaultFolderPaths = [
-            get_stylesheet_directory() . '/models/customtypes' => self::$currentThemeNamespace . '\models\customtypes',
-            get_stylesheet_directory() . '/models/taxonomies' => self::$currentThemeNamespace . '\models\taxonomies'
+            get_stylesheet_directory() . '/models/customtypes' => self::getCurrentThemeNamespace() . '\models\customtypes',
+            get_stylesheet_directory() . '/models/taxonomies' => self::getCurrentThemeNamespace() . '\models\taxonomies'
         ];
 
         //Load all models class
@@ -226,7 +231,7 @@ class Rootpress
         self::loadFilesFromPaths('service', $servicesDefaultFolderPaths, function($classPath){
 
             // Is this service is enable inside rootpress configuration ?
-            if(isset(self::$configuration['services']) && isset(self::$configuration['services'][$classPath]) && self::$configuration['services'][$classPath]) {
+            if(isset(self::$configuration['services']) && isset(self::$configuration['services'][$classPath]) && (self::$configuration['services'][$classPath] || is_array(self::$configuration['services'][$classPath]))) {
 
                 // Call startService method for each service
                 if(method_exists($classPath, 'startService')) {
@@ -242,6 +247,13 @@ class Rootpress
     }
 
     /**
+     * Get Rootpress dir path
+     */
+    public static function getRootpressDirPath() {
+        return plugin_dir_path(__FILE__);
+    }
+
+    /**
      * Get list of class from folders list and execute a call back on all this class
      * @param $filterKeyword string keyword use in apply_filters of this function
      * @param $foldersPaths array associative array [folder path => associate namespace, ...]
@@ -250,7 +262,7 @@ class Rootpress
      * @filter rootpress_[$filterKeyword]_files_list Override the list of files to load
      * @filter rootpress_[$filterKeyword]_class_name_list Override the class name guessing method
      */
-    private static function loadFilesFromPaths($filterKeyword, $foldersPaths, $callback) {
+    public static function loadFilesFromPaths($filterKeyword, $foldersPaths, $callback) {
 
         // Filter the list of folders
         $foldersPaths = apply_filters('rootpress_' . $filterKeyword . '_folders_list', $foldersPaths);

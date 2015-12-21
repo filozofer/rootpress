@@ -2,6 +2,7 @@
 
 namespace ChangeThisToYourThemeName\repositories;
 
+use Rootpress\utils\Hydratator;
 use Rootpress\repositories\CRUDRepository;
 
 /**

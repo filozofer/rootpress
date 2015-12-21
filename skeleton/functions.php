@@ -1,14 +1,14 @@
 <?php
 
-namespace ChangeThisToYourThemeNameName;
+namespace ChangeThisToYourThemeName;
 
-$ChangeThisToYourThemeNameName = new ChangeThisToYourThemeNameName();
-class ChangeThisToYourThemeNameName {
+$ChangeThisToYourThemeName = new ChangeThisToYourThemeName();
+class ChangeThisToYourThemeName {
 
 	/**
 	 * Init Theme
 	 */
-	public function ChangeThisToYourThemeNameName() {
+	public function ChangeThisToYourThemeName() {
 
 	}
 

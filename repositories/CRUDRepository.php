@@ -2,6 +2,8 @@
 
 namespace Rootpress\repositories;
 
+use Rootpress\utils\Hydratator;
+
 /**
  * CRUDRepository
  */
