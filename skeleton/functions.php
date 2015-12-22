@@ -2,13 +2,13 @@
 
 namespace ChangeThisToYourThemeName;
 
-$ChangeThisToYourThemeName = new ChangeThisToYourThemeName();
+ChangeThisToYourThemeName::init();
 class ChangeThisToYourThemeName {
 
 	/**
 	 * Init Theme
 	 */
-	public function ChangeThisToYourThemeName() {
+	public static function init() {
 
 	}
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace ChangeThisToYourThemeName\models\customtypes;
+namespace ChangeThisToYourThemeName\controllers;
 
 use ChangeThisToYourThemeName\repositories\SampleRepository;
 
