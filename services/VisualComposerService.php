@@ -15,6 +15,9 @@ class VisualComposerService {
 	 */
     public static function startService() {
 
+        // Check if visual composer is enable
+        //return false; //TODO
+
         // Declare Visual Composer Custom Widgets
         add_action('init', ['Rootpress\services\VisualComposerService', 'declareVisualComposerWidgets']);
 
@@ -28,9 +31,10 @@ class VisualComposerService {
      * @param $widgetDeclaration array of string, each string is the name of an entity which represent a vc widget
      */
     public static function declareVisualComposerWidgets() {
+
         // Get list of widgets folders
         $widgetsDefaultFolderPaths = [
-            get_stylesheet_directory() . '/widgets' => Rootpress::getCurrentThemeNamespace() . '\visualcomposer\widgets'
+            get_stylesheet_directory() . '/visualcomposer/widgets' => Rootpress::getCurrentThemeNamespace() . '\visualcomposer\widgets'
         ];
 
         //Load all widgets class and then start them
@@ -46,6 +50,7 @@ class VisualComposerService {
      * Allow to declare custom visual composer field for widgets
      */
     public static function declareVisualComposerFields() {
+        
         // Get list of visual composer fields folders
         $widgetsFieldsDefaultFolderPaths = [
             Rootpress::getRootpressDirPath() . '/visualcomposer/fields' => 'Rootpress\visualcomposer\fields',

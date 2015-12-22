@@ -12,8 +12,6 @@
 
 namespace Rootpress;
 
-use LeVillage\controllers\BiduleTruc;
-
 // Deploy the roots !
 Rootpress::deployTheRoots();
 
@@ -54,11 +52,6 @@ class Rootpress
         // Launch Rootpress Services according to rootpress configuration
         self::loadServices();
 
-        /*
-         Finish Skeleton
-         Views
-         Templates
-        */
     }
 
     /**
@@ -295,4 +288,30 @@ class Rootpress
         }
     }
 
+    /**
+     * Plugin Activation hook function to check for Minimum PHP and WordPress versions
+     * @param string $wp Minimum version of WordPress required for this plugin
+     * @param string $php Minimum version of PHP required for this plugin
+     */
+    public static function rootpressActivation($wp = '4.0', $php = '5.2.4') {
+        global $wp_version;
+
+        // Compare version
+        if(version_compare(PHP_VERSION, $php, '<')) {
+            $flag = 'PHP';
+        }
+        elseif(version_compare($wp_version, $wp, '<' )) {
+            $flag = 'WordPress';
+        }
+        else { return; }
+
+        // Disable plugin and display error message 
+        deactivate_plugins( basename( __FILE__ ) );
+        $version = 'PHP' == $flag ? $php : $wp;
+        wp_die('<p>The <strong>Insert PLugin Name Here</strong> plugin requires'. $flag .' version '. $version .' or greater.</p>','Plugin Activation Error',  ['response' => 200, 'back_link' => TRUE]);
+    }
+
 }
+
+// Register activation hook
+register_activation_hook( __FILE__,  ['Your_Plugin_Class_Name', 'rootpressActivation']);
