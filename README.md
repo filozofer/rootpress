@@ -42,6 +42,7 @@ Soon...
 - More Services class
 - More Utils class
 - Visual Composer Widgets Backoffice render
+- Router system with configuration file
 
 
 *All the roots you need to start a new wordpress custom project*

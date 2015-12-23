@@ -35,10 +35,10 @@ class SampleController {
         global $post;
 
         //Create timber context
-        $data = Timber::get_context();
+        $data = \Timber::get_context();
 
         //Get current post (needed if you wanted to print the content of the post type by interpreted shortcodes)
-        $data['post'] = new TimberPost();
+        $data['post'] = new \TimberPost();
 
         //Get current sample
         $sample = SampleRepository::getInstance()->findOne($post->ID);
@@ -53,7 +53,7 @@ class SampleController {
         global $post;
 
         // Create timber context
-        $data = Timber::get_context();
+        $data = \Timber::get_context();
 
         // Get params
         $order = (isset($_GET['sample_order'])) ? $_GET['sample_order'] : 'desc';

@@ -43,6 +43,8 @@ class Rootpress
 
         // Controllers System
         add_filter('template_include', ['Rootpress\Rootpress', 'controllersSystem'], 99);
+        add_action('get_header', ['Rootpress\Rootpress', 'controllersSystemHeader'], 99);
+        add_action('get_footer', ['Rootpress\Rootpress', 'controllersSystemFooter'], 99);
         self::declareControllersRouter();
 
         // Models System
@@ -131,6 +133,12 @@ class Rootpress
         $template_filename = basename($template_path, '.php');
         do_action('controller_action_' . $template_filename);
         return $template_path;
+    }
+    public static function controllersSystemHeader() {
+        do_action('controller_action_header');
+    }
+    public static function controllersSystemFooter() {
+        do_action('controller_action_footer');
     }
 
     /**
