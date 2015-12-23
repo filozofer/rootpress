@@ -1,5 +1,7 @@
 <?php
 
+namespace Rootpress\utils;
+
 /**
  * Static class which hydrate Custom Type & Taxonomies from theirs ACF fields
  */
@@ -47,7 +49,7 @@
 		if($depth > 0) {
 
 			// Call cached system if we have already cache this item since the beginning of the request (base on ID and fields when caching)
-			if(!$disableCache && isset(self::$objectCache[$type . '_' . $ID . '_depth_' . $depth . '_fields_' . $fieldsMD5])) {
+			if(!self::$disableCache && isset(self::$objectCache[$type . '_' . $ID . '_depth_' . $depth . '_fields_' . $fieldsMD5])) {
 				return self::$objectCache[$type . '_' . $ID . '_depth_' . $depth . '_fields_' . $fieldsMD5];
 			}
 
@@ -142,7 +144,7 @@
 
 		// Call construct if exist which allow to change some values on creation
 		if(method_exists($object, 'construct')) {
-			$this->construct();
+			$object->construct();
 		}
 
 		// Put the object in cache
