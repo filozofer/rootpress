@@ -14,6 +14,20 @@ class CRUDRepository
 
     // Repository parameters
     public static $fields = [];
+    public static $instance;
+
+    /**
+     *
+     */
+    public static function getInstance()
+    {
+        if (is_null(self::$instance)) {
+            $childclass = get_called_class();
+            self::$instance = new $childclass;
+        }
+
+        return self::$instance;
+    }
 
     /**
      * Find one post with id
@@ -33,9 +47,9 @@ class CRUDRepository
 
         //Magazines
         $posts = get_posts([
-            'post_type'         => static::$associate_post_type,
-            'post_status'       => 'publish',
-            'suppress_filters'  => false
+            'post_type' => static::$associate_post_type,
+            'post_status' => 'publish',
+            'suppress_filters' => false
         ]);
 
         //Hydrate them
@@ -45,7 +59,8 @@ class CRUDRepository
     /**
      * TODO
      */
-    public function findOneBy() {
+    public function findOneBy()
+    {
         throw new Exception("TODO: FindBy function", 1);
     }
 
@@ -53,7 +68,8 @@ class CRUDRepository
     /**
      * TODO
      */
-    public function findBy() {
+    public function findBy()
+    {
         throw new Exception("TODO: findBy function", 1);
     }
 

@@ -109,7 +109,7 @@ abstract class RootpressModel  {
 		if(isset(static::$order_attributes) && is_array(static::$order_attributes)) {
 
 			//Create empty container
-			$data = new stdClass();
+			$data = new \stdClass();
 			foreach (static::$order_attributes as $attr) {
 				if(isset($this->$attr)) {
 					//Keep value attribute
