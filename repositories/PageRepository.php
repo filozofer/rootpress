@@ -11,6 +11,20 @@ class PageRepository {
 
     //Repository parameters
     public static $fields = [];
+    public static $instance;
+
+    /**
+     * Get class instance
+     */
+    public static function getInstance()
+    {
+        if (is_null(self::$instance)) {
+            $childclass = get_called_class();
+            self::$instance = new $childclass;
+        }
+
+        return self::$instance;
+    }
 
     /**
      * Find one page by ID and hydrate it

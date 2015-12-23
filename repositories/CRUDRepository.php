@@ -17,7 +17,7 @@ class CRUDRepository
     public static $instance;
 
     /**
-     *
+     * Get class instance
      */
     public static function getInstance()
     {

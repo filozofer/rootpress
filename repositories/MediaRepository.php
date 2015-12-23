@@ -7,6 +7,21 @@ namespace Rootpress\repositories;
  */
 class MediaRepository {
 
+    // Repository parameters
+    public static $instance;
+
+    /**
+     * Get class instance
+     */
+    public static function getInstance()
+    {
+        if (is_null(self::$instance)) {
+            $childclass = get_called_class();
+            self::$instance = new $childclass;
+        }
+
+        return self::$instance;
+    }
 
 	/**
      * Find one media by ID and return all it's meta
