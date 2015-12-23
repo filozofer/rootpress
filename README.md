@@ -18,15 +18,15 @@ Rootpress help you to start with a good architecture for your wordpress project 
 
 ## Installation
 
-Create your new custom theme specific to the website you working on.
-Clone or download the RootPress project inside your plugins folder.
-Enable the plugin RootPress.
-Copy the content of the folder plugins/rootpress/skeleton inside your theme folder.
-Change all the value of "ChangeThisToYourThemeName" by your own theme name.
-Change the values inside style.css file.
-Read the documentation (you will need it!)
+- Create your new custom theme specific to the website you working on.
+- Clone or download the RootPress project inside your plugins folder.
+- Enable the plugin RootPress.
+- Copy the content of the folder plugins/rootpress/skeleton inside your theme folder.
+- Change all the value of "ChangeThisToYourThemeName" by your own theme name.
+- Change the values inside style.css file.
+- Read the documentation (you will need it!)
 
-## How it work ? 
+## Documentation 
 
 Soon...
 
