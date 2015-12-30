@@ -3,6 +3,7 @@
 namespace Rootpress\repositories;
 
 use Rootpress\utils\Hydratator;
+use WP_Term;
 
 /**
  * CRUDTaxonomyRepository
@@ -27,6 +28,17 @@ class CRUDTaxonomyRepository {
         }
 
         return self::$instance;
+    }
+
+    /**
+     * Find one term by id
+     * @param $termId int
+     * @return WP_Term
+     */
+    public function findOne($termId)
+    {
+        $term = get_term($termId, static::$associate_post_type);
+        return Hydratator::hydrate($term, self::$fields);
     }
 
     /**
