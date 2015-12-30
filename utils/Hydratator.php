@@ -83,12 +83,12 @@ namespace Rootpress\utils;
 				if(is_array($object->$key) && count($object->$key) > 0 && (isset($current[0]->post_type) || isset($current[0]->taxonomy))) {
 					// If we declare specific fields to return, send them to Hydratator
 					$fieldsForThisKey = (isset($fields['fields']) && isset($fields['fields'][$key]) && is_array($fields['fields'][$key])) ? $fields['fields'][$key] : [];
-					$object->$key = self::hydrates($object->$key, $fieldsForThisKey, $depth--);
+					$object->$key = self::hydrates($object->$key, $fieldsForThisKey, $depth - 1);
 				}
 				else if(isset($object->$key->post_type)){
 					// If we declare specific fields to return, send them to Hydratator
 					$fieldsForThisKey = (isset($fields['fields']) && isset($fields['fields'][$key]) && is_array($fields['fields'][$key])) ? $fields['fields'][$key] : [];
-					$object->$key = self::hydrate($object->$key, $fieldsForThisKey, $depth--);
+					$object->$key = self::hydrate($object->$key, $fieldsForThisKey, $depth - 1);
 				}
 			}
 
@@ -122,10 +122,10 @@ namespace Rootpress\utils;
 				$fieldsForThisKey = (isset($fields['taxonomies']) && isset($fields['taxonomies'][$key]) && is_array($fields['taxonomies'][$key])) ? $fields['taxonomies'][$key] : [];
 				if($value != false) {
 					if(is_array($value)) {
-						$object->$key = self::hydrates($value, $fieldsForThisKey, $depth--);
+						$object->$key = self::hydrates($value, $fieldsForThisKey, $depth - 1);
 					}
 					else {
-						$object->$key = self::hydrate($value, $fieldsForThisKey, $depth--);
+						$object->$key = self::hydrate($value, $fieldsForThisKey, $depth - 1);
 					}
 				}
 			}
