@@ -14,19 +14,21 @@ class CRUDRepository
 
     // Repository parameters
     public static $fields = [];
-    public static $instance;
+    public static $instances;
 
     /**
      * Get class instance
+     * $instances is an array which contains each instanced child class
      */
     public static function getInstance()
     {
-        if (is_null(self::$instance)) {
-            $childclass = get_called_class();
-            self::$instance = new $childclass;
+        $childClass = get_called_class();
+
+        if(!isset(self::$instances[$childClass])){
+            self::$instances[$childClass] = new $childClass;
         }
 
-        return self::$instance;
+        return self::$instances[$childClass];
     }
 
     /**
@@ -36,7 +38,7 @@ class CRUDRepository
     public function findOne($postId)
     {
         $post = get_post($postId);
-        return Hydratator::hydrate($post, self::$fields);
+        return Hydratator::hydrate($post, static::$fields);
     }
 
     /**
@@ -44,7 +46,6 @@ class CRUDRepository
      */
     public function findAll()
     {
-
         //Magazines
         $posts = get_posts([
             'post_type' => static::$associate_post_type,
@@ -53,7 +54,7 @@ class CRUDRepository
         ]);
 
         //Hydrate them
-        return Hydratator::hydrates($posts, self::$fields);
+        return Hydratator::hydrates($posts, static::$fields);
     }
 
     /**
