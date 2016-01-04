@@ -3,6 +3,7 @@
 namespace Rootpress\visualcomposer\widgets;
 
 use Rootpress\visualcomposer\widgets\WidgetVC_Abstract;
+use Timber;
 
 /** 
  * Representing the "Lame Sample" Widget
@@ -25,13 +26,13 @@ class WPBakeryShortCode_lame_sample extends WidgetVC_Abstract {
     /**
      * How the widget is render inside the frontend
      */
-    public function content($atts, $content = null, $base = '') {
+    public static function content($atts, $content = null, $base = '') {
 
         //Get Context
         $data = Timber::get_context();
 
         //Handle default values
-        $atts = $this->handleDefaultValues($atts, [
+        $atts = shortcode_atts($atts, [
             'title'       => '', 
             'description' => ''
         ]);
@@ -40,10 +41,10 @@ class WPBakeryShortCode_lame_sample extends WidgetVC_Abstract {
         $data['title'] = $atts['title'];
 
         //Get the content
-        $data['description'] = $this->decode($atts['description']);
+        $data['description'] = self::decode($atts['description']);
 
         //Render
-        return $this->renderView('views/widgets/WPBakeryShortCode_lame_sample.twig', $data);
+        return self::renderView('views/widgets/WPBakeryShortCode_lame_sample.twig', $data);
     }
 
     /**
@@ -62,6 +63,7 @@ class WPBakeryShortCode_lame_sample extends WidgetVC_Abstract {
 				'param_name' => 'description'
 			]
 		];
+		add_shortcode(static::$base, [__CLASS__, 'content']);
 		vc_map([
 			'base'     => static::$base,
 			'name'     => static::$widgetName,
