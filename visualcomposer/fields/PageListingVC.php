@@ -52,20 +52,23 @@ class PageListingVC {
         $items = static::getValues();
         //Print the field
         echo '<div class="relation_field_block ' . $uniqid . '">' .
-                '<select name="' . $paramNameEsc . '" class="' . $classString . '">';
+                '<select name="' . $paramNameEsc . '" class="' . $classString . '" style="width: 100%;">';
                         echo '<option value="">' . static::$emptyValue . '</option>';
 
                     foreach ($items as $item) {
                         $id = (isset($item->ID)) ? $item->ID : $item->term_id;
                         $label = (isset($item->post_title)) ? $item->post_title : $item->name;
                         $selected = ($id == $valueEsc) ? 'selected' : '';
-                        echo '<option value="' . $id . '" ' . $selected . '>' . $label . '</option>';
+                        if(!empty(trim($label))) {
+                            echo '<option value="' . $id . '" ' . $selected . '>' . $label . '</option>';
+                        }
                     }
 
         echo    '</select>' . 
               '</div>';
 
         echo '<script>jQuery(".' . $uniqid . ' select").select2();</script>';
+        echo '<style>.select2-drop.select2-drop-active { z-index: 100000; }</style>';
     }
 
     public static function getValues() {

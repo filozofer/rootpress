@@ -32,10 +32,10 @@ class WPBakeryShortCode_lame_sample extends WidgetVC_Abstract {
         $data = Timber::get_context();
 
         //Handle default values
-        $atts = shortcode_atts($atts, [
+        $atts = shortcode_atts([
             'title'       => '', 
             'description' => ''
-        ]);
+        ], $atts);
 
         //Get the title
         $data['title'] = $atts['title'];
