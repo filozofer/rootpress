@@ -11,22 +11,28 @@ class PageRepository {
 
     //Repository parameters
     public static $fields = [];
+    public static $depth = 2;
     public static $instance;
 
     /**
      * Get class instance
+     * @param $neededFields array of fields to set as settings
+     * @param $neededDepth int depth to set as settings
      */
-    public static function getInstance($fieldsNeeded = null)
+    public static function getInstance($neededFields = null, $neededDepth = null)
     {
-        // Instanciate if null
         if (is_null(self::$instance)) {
             $childclass = get_called_class();
             self::$instance = new $childclass;
         }
 
-        // Set field if user ask for it
-        if(!is_null($fieldsNeeded)) {
-            static::$fields = (isset(static::$$fieldsNeeded)) ? static::$$fieldsNeeded : [];
+        // Set fields if user ask for it
+        if(!is_null($neededFields)) {
+            static::$fields = (isset(static::$$neededFields)) ? static::$$neededFields : [];
+        }
+        // Set depth if user ask for it
+        if(!is_null($neededDepth)) {
+            static::$depth = (isset(static::$$neededDepth)) ? static::$$neededDepth : [];
         }
 
         return self::$instance;
@@ -38,7 +44,7 @@ class PageRepository {
      */
     public function findOne($pageId) {
         $page = get_post($pageId);
-        return Hydratator::hydrate($page, self::$fields);
+        return Hydratator::hydrate($page, static::$fields, static::$depth);
     }
 
 }

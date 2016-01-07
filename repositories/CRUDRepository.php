@@ -14,13 +14,16 @@ class CRUDRepository
 
     // Repository parameters
     public static $fields = [];
+    public static $depth = 2;
     public static $instances;
 
     /**
      * Get class instance
      * $instances is an array which contains each instanced child class
+     * @param $neededFields array of fields to set as settings
+     * @param $neededDepth int depth to set as settings
      */
-    public static function getInstance($fieldsNeeded = null)
+    public static function getInstance($neededFields = null, $neededDepth = null)
     {
         $childClass = get_called_class();
 
@@ -28,9 +31,13 @@ class CRUDRepository
             self::$instances[$childClass] = new $childClass;
         }
 
-        // Set field if user ask for it
-        if(!is_null($fieldsNeeded)) {
-            static::$fields = (isset(static::$$fieldsNeeded)) ? static::$$fieldsNeeded : [];
+        // Set fields if user ask for it
+        if(!is_null($neededFields)) {
+            static::$fields = (isset(static::$$neededFields)) ? static::$$neededFields : [];
+        }
+        // Set depth if user ask for it
+        if(!is_null($neededDepth)) {
+            static::$depth = (isset(static::$$neededDepth)) ? static::$$neededDepth : [];
         }
 
         return self::$instances[$childClass];
@@ -43,7 +50,7 @@ class CRUDRepository
     public function findOne($postId)
     {
         $post = get_post($postId);
-        return Hydratator::hydrate($post, static::$fields);
+        return Hydratator::hydrate($post, static::$fields, static::$depth);
     }
 
     /**
@@ -59,7 +66,7 @@ class CRUDRepository
         ]);
 
         //Hydrate them
-        return Hydratator::hydrates($posts, static::$fields);
+        return Hydratator::hydrates($posts, static::$fields, static::$depth);
     }
 
     /**

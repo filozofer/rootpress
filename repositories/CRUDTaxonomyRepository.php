@@ -15,13 +15,16 @@ class CRUDTaxonomyRepository {
 
     //Repository parameters
     public static $fields = [];
+    public static $depth = 2;
     public static $instance;
 
     /**
      * Get class instance
      * $instances is an array which contains each instanced child class
+     * @param $neededFields array of fields to set as settings
+     * @param $neededDepth int depth to set as settings
      */
-    public static function getInstance($fieldsNeeded = null)
+    public static function getInstance($fieldsNeeded = null, $neededDepth = null)
     {
         $childClass = get_called_class();
 
@@ -32,6 +35,10 @@ class CRUDTaxonomyRepository {
         // Set field if user ask for it
         if(!is_null($fieldsNeeded)) {
             static::$fields = (isset(static::$$fieldsNeeded)) ? static::$$fieldsNeeded : [];
+        }
+        // Set depth if user ask for it
+        if(!is_null($neededDepth)) {
+            static::$depth = (isset(static::$$neededDepth)) ? static::$$neededDepth : [];
         }
 
         return self::$instances[$childClass];
@@ -45,7 +52,7 @@ class CRUDTaxonomyRepository {
     public function findOne($termId)
     {
         $term = get_term($termId, static::$associate_post_type);
-        return Hydratator::hydrate($term, self::$fields);
+        return Hydratator::hydrate($term, static::$fields, static::$depth);
     }
 
     /**
@@ -57,7 +64,7 @@ class CRUDTaxonomyRepository {
         $terms = get_terms(static::$associate_post_type, ['hide_empty' => false]);
 
         //Hydrate them all
-        $terms = Hydratator::hydrates($terms, self::$fields);
+        $terms = Hydratator::hydrates($terms, static::$fields, static::$depth);
 
         return $rubrics;
     }
