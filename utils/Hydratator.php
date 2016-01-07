@@ -112,41 +112,38 @@ namespace Rootpress\utils;
 				}
 			}
 
-			// Hydrate taxonomies only for WP_Post
-			if(get_class($object) === 'WP_Post') {
+			// Hydrate taxonomies
+			$taxonomies = [];
 
-				$taxonomies = [];
-
-				// Get only taxonomies wanted
-				if (!empty($fields) && isset($fields['taxonomies'])) {
-					foreach ($fields['taxonomies'] as $field_key => $field) {
-						$fieldName = (is_array($field)) ? $field_key : $field;
-						$taxonomies[$fieldName] = get_the_terms($ID, $fieldName);
-						if (is_array($taxonomies[$fieldName])) {
-							$taxonomies[$fieldName] = array_values($taxonomies[$fieldName]);
-						}
-					}
-				} // Get all taxonomies (avoid this for prevent performances issues)
-				else {
-					$taxonomiesList = get_post_taxonomies($ID);
-					foreach ($taxonomiesList as $taxo) {
-						$taxonomies[$taxo] = get_the_terms($ID, $taxo);
-						if (is_array($taxonomies[$taxo])) {
-							$taxonomies[$taxo] = array_values($taxonomies[$taxo]);
-						}
+			// Get only taxonomies wanted
+			if (!empty($fields) && isset($fields['taxonomies'])) {
+				foreach ($fields['taxonomies'] as $field_key => $field) {
+					$fieldName = (is_array($field)) ? $field_key : $field;
+					$taxonomies[$fieldName] = get_the_terms($ID, $fieldName);
+					if (is_array($taxonomies[$fieldName])) {
+						$taxonomies[$fieldName] = array_values($taxonomies[$fieldName]);
 					}
 				}
+			} // Get all taxonomies (avoid this for prevent performances issues)
+			else {
+				$taxonomiesList = get_post_taxonomies($ID);
+				foreach ($taxonomiesList as $taxo) {
+					$taxonomies[$taxo] = get_the_terms($ID, $taxo);
+					if (is_array($taxonomies[$taxo])) {
+						$taxonomies[$taxo] = array_values($taxonomies[$taxo]);
+					}
+				}
+			}
 
-				// Hydrate taxonomies
-				foreach ($taxonomies as $key => $value) {
-					$object->$key = $value;
-					$fieldsForThisKey = (isset($fields['taxonomies']) && isset($fields['taxonomies'][$key]) && is_array($fields['taxonomies'][$key])) ? $fields['taxonomies'][$key] : [];
-					if ($value != false) {
-						if (is_array($value)) {
-							$object->$key = self::hydrates($value, $fieldsForThisKey, $depth - 1);
-						} else {
-							$object->$key = self::hydrate($value, $fieldsForThisKey, $depth - 1);
-						}
+			// Hydrate taxonomies
+			foreach ($taxonomies as $key => $value) {
+				$object->$key = $value;
+				$fieldsForThisKey = (isset($fields['taxonomies']) && isset($fields['taxonomies'][$key]) && is_array($fields['taxonomies'][$key])) ? $fields['taxonomies'][$key] : [];
+				if ($value != false) {
+					if (is_array($value)) {
+						$object->$key = self::hydrates($value, $fieldsForThisKey, $depth - 1);
+					} else {
+						$object->$key = self::hydrate($value, $fieldsForThisKey, $depth - 1);
 					}
 				}
 			}
