@@ -20,12 +20,17 @@ class CRUDRepository
      * Get class instance
      * $instances is an array which contains each instanced child class
      */
-    public static function getInstance()
+    public static function getInstance($fieldsNeeded = null)
     {
         $childClass = get_called_class();
 
         if(!isset(self::$instances[$childClass])){
             self::$instances[$childClass] = new $childClass;
+        }
+
+        // Set field if user ask for it
+        if(!is_null($fieldsNeeded)) {
+            static::$fields = (isset(static::$$fieldsNeeded)) ? static::$$fieldsNeeded : [];
         }
 
         return self::$instances[$childClass];

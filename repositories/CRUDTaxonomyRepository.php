@@ -19,15 +19,22 @@ class CRUDTaxonomyRepository {
 
     /**
      * Get class instance
+     * $instances is an array which contains each instanced child class
      */
-    public static function getInstance()
+    public static function getInstance($fieldsNeeded = null)
     {
-        if (is_null(self::$instance)) {
-            $childclass = get_called_class();
-            self::$instance = new $childclass;
+        $childClass = get_called_class();
+
+        if(!isset(self::$instances[$childClass])){
+            self::$instances[$childClass] = new $childClass;
         }
 
-        return self::$instance;
+        // Set field if user ask for it
+        if(!is_null($fieldsNeeded)) {
+            static::$fields = (isset(static::$$fieldsNeeded)) ? static::$$fieldsNeeded : [];
+        }
+
+        return self::$instances[$childClass];
     }
 
     /**

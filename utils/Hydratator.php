@@ -3,7 +3,7 @@
 namespace Rootpress\utils;
 
 /**
- * Static class which hydrate Custom Type & Taxonomies from theirs ACF fields
+ * Static class which hydrate Customs Types, Taxonomies & Users from theirs ACF fields
  */
  class Hydratator {
 
@@ -27,19 +27,31 @@ namespace Rootpress\utils;
 	 */
 	public static function hydrate(&$object, $fields = [], $depth = 2) {
 
-		// Case null
-		if($object == null) {
-			return null;
+		// Case null or not an object
+		if(is_null($object) || !is_object($object)) {
+			return $object;
 		}
 		// Case WP_Error
 		else if(is_a($object, 'WP_Error')) {
 			return $object;
 		}
 
-		// Determine if object is a post or a taxonomy
-		$type = (isset($object->ID)) ? 'post' : 'taxonomy';
+		// Determine if object is a post, a taxonomy or a user
+		$type = '';
+		if(get_class($object) === 'WP_Post') {
+			$type = 'post';
+		}
+		else if(get_class($object) === 'WP_Term') {
+			$type = 'taxonomy';
+		}
+		else if(get_class($object) === 'WP_User') {
+			$type = 'user';
+		}
+		else {
+			return $object;
+		}
 		// Get is ID
-		$ID = ($type == 'post') ? $object->ID : $object->term_id;
+		$ID = self::getIdFromWpObject($object);
 		// Create hash for cache system
 		$fieldsMD5 = md5(serialize($fields));
 		// Fire filter which allow rootpress to transform WP_Post as Model entity
@@ -63,12 +75,15 @@ namespace Rootpress\utils;
 				$customFields = [];
 				foreach($fields['fields'] as $field_key => $field) {
 					$fieldName = (is_array($field)) ? $field_key : $field;
-					$customFields[$fieldName] = get_field($fieldName, ($type == 'post') ? $ID : $object->taxonomy . '_' . $ID);
+					$acfKey = self::getAcfKey($object, $type, $ID);
+					$customFields[$fieldName] = get_field($fieldName, $acfKey);
 				}
 			}
 			// Get all existings fields (avoid this for prevent performances issues)
 			else {
-	            $customFields = get_fields(($type == 'post') ? $ID : $object->taxonomy . '_' . $ID);
+
+				$acfKey = self::getAcfKey($object, $type, $ID);
+	            $customFields = get_fields($acfKey);
 				if($customFields === false) {
 					$customFields = [];
 				}
@@ -79,53 +94,59 @@ namespace Rootpress\utils;
 				$object->$key = $value;
 				$current = $object->$key;
 
-				// Hydrate the child(s) if it's a post or a taxonomy
-				if(is_array($object->$key) && count($object->$key) > 0 && (isset($current[0]->post_type) || isset($current[0]->taxonomy))) {
+				// Hydrate the child(s) if it's an object
+				if(is_array($object->$key) && count($object->$key) > 0 && isset($current[0]) && is_object($current[0]) && in_array(get_class($current[0]), ['WP_Post', 'WP_Term', 'WP_User'])) {
 					// If we declare specific fields to return, send them to Hydratator
 					$fieldsForThisKey = (isset($fields['fields']) && isset($fields['fields'][$key]) && is_array($fields['fields'][$key])) ? $fields['fields'][$key] : [];
+
+					// Handle WP_User case by using setter to avoid notice from magic WP_User setter function
+					// TODO Can we find a better method than disable php notice ? "Notice: Indirect modification of overloaded property WP_User as no effect"
+					$actualLevelReporting = error_reporting(E_ERROR | E_WARNING);
 					$object->$key = self::hydrates($object->$key, $fieldsForThisKey, $depth - 1);
+					error_reporting($actualLevelReporting);
 				}
-				else if(isset($object->$key->post_type)){
+				else if(is_object($current) && in_array(get_class($current), ['WP_Post', 'WP_Term', 'WP_User'])){
 					// If we declare specific fields to return, send them to Hydratator
 					$fieldsForThisKey = (isset($fields['fields']) && isset($fields['fields'][$key]) && is_array($fields['fields'][$key])) ? $fields['fields'][$key] : [];
 					$object->$key = self::hydrate($object->$key, $fieldsForThisKey, $depth - 1);
 				}
 			}
 
-			/* Hydrate taxonomies */
-			$taxonomies = [];
+			// Hydrate taxonomies only for WP_Post
+			if(get_class($object) === 'WP_Post') {
 
-			// Get only taxonomies wanted
-			if(!empty($fields) && isset($fields['taxonomies'])){
-				foreach($fields['taxonomies'] as $field_key => $field) {
-					$fieldName = (is_array($field)) ? $field_key : $field;
-					$taxonomies[$fieldName] = get_the_terms($ID, $fieldName);
-					if(is_array($taxonomies[$fieldName])) {
-						$taxonomies[$fieldName] = array_values($taxonomies[$fieldName]);
+				$taxonomies = [];
+
+				// Get only taxonomies wanted
+				if (!empty($fields) && isset($fields['taxonomies'])) {
+					foreach ($fields['taxonomies'] as $field_key => $field) {
+						$fieldName = (is_array($field)) ? $field_key : $field;
+						$taxonomies[$fieldName] = get_the_terms($ID, $fieldName);
+						if (is_array($taxonomies[$fieldName])) {
+							$taxonomies[$fieldName] = array_values($taxonomies[$fieldName]);
+						}
+					}
+				} // Get all taxonomies (avoid this for prevent performances issues)
+				else {
+					$taxonomiesList = get_post_taxonomies($ID);
+					foreach ($taxonomiesList as $taxo) {
+						$taxonomies[$taxo] = get_the_terms($ID, $taxo);
+						if (is_array($taxonomies[$taxo])) {
+							$taxonomies[$taxo] = array_values($taxonomies[$taxo]);
+						}
 					}
 				}
-			}
-			// Get all taxonomies (avoid this for prevent performances issues)
-			else {
-				$taxonomiesList = get_post_taxonomies($ID);
-				foreach ($taxonomiesList as $taxo) {
-					$taxonomies[$taxo] = get_the_terms($ID, $taxo);
-					if(is_array($taxonomies[$taxo])) {
-						$taxonomies[$taxo] = array_values($taxonomies[$taxo]);
-					}
-				}
-			}
 
-			// Hydrate taxonomies
-			foreach ($taxonomies as $key => $value) {
-				$object->$key = $value;
-				$fieldsForThisKey = (isset($fields['taxonomies']) && isset($fields['taxonomies'][$key]) && is_array($fields['taxonomies'][$key])) ? $fields['taxonomies'][$key] : [];
-				if($value != false) {
-					if(is_array($value)) {
-						$object->$key = self::hydrates($value, $fieldsForThisKey, $depth - 1);
-					}
-					else {
-						$object->$key = self::hydrate($value, $fieldsForThisKey, $depth - 1);
+				// Hydrate taxonomies
+				foreach ($taxonomies as $key => $value) {
+					$object->$key = $value;
+					$fieldsForThisKey = (isset($fields['taxonomies']) && isset($fields['taxonomies'][$key]) && is_array($fields['taxonomies'][$key])) ? $fields['taxonomies'][$key] : [];
+					if ($value != false) {
+						if (is_array($value)) {
+							$object->$key = self::hydrates($value, $fieldsForThisKey, $depth - 1);
+						} else {
+							$object->$key = self::hydrate($value, $fieldsForThisKey, $depth - 1);
+						}
 					}
 				}
 			}
@@ -134,7 +155,7 @@ namespace Rootpress\utils;
 
 		// Filter which allow to do custom hydratation
 		if(isset($object->post_type)) {
-			$object = apply_filters('rootpress_after_hydrate_' . $object->post_type, $object);
+			$object = apply_filters('rootpress_after_hydrate_' . self::getTypeFromWpObject($object), $object);
 		}
 
 		// Call clean method if exist which allow to clean the object from undesired values (default from wordpress for example)
@@ -155,9 +176,10 @@ namespace Rootpress\utils;
 
 	/**
 	 * Hydrate an array of custom type
-	 * @param $object Object to hydrate
-	 * @param $fields Which fields we need to hydrate ?
-	 * @param $depth maximal depth for hydration
+	 * @param $object array[WP_Post|WP_Term|WP_User] Array of objects to hydrate
+	 * @param $fields array Which fields we need to hydrate ?
+	 * @param $depth int maximal depth for hydration
+	 * @return array of hydrated objects
 	 */
 	public static function hydrates(&$objects, $fields = [], $depth = 2) {
 
@@ -178,5 +200,65 @@ namespace Rootpress\utils;
 		return $objects;
 
 	}
+
+	 /**
+	  * Get ID of a WP Object
+	  * @param $object WP Object (WP_Post|WP_Term|WP_User)
+	  * @return int ID of the object
+	  */
+	 private static function getIdFromWpObject($object) {
+		 if(get_class($object) === 'WP_Post') {
+			 return $object->ID;
+		 }
+		 else if(get_class($object) === 'WP_Term') {
+			 return $object->term_id;
+		 }
+		 else if(get_class($object) === 'WP_User') {
+			 return (isset($object->data)) ? $object->data->ID : null;
+		 }
+		 else {
+			 return null;
+		 }
+	 }
+
+	 /**
+	  * Get Type of a WP Object (post_type|taxonomy|user)
+	  * @param $object WP Object (WP_Post|WP_Term|WP_User)
+	  * @return string (post_type|taxonomy|user)
+	  */
+	 private static function getTypeFromWpObject($object) {
+		 if(get_class($object) === 'WP_Post') {
+			 return $object->post_type;
+		 }
+		 else if(get_class($object) === 'WP_Term') {
+			 return $object->taxonomy;
+		 }
+		 else if(get_class($object) === 'WP_User') {
+			 return 'user';
+		 }
+		 else {
+			 return '';
+		 }
+	 }
+
+	 /**
+	  * Get ACF key to get a field value
+	  * @param $object The object containing the acf field
+	  * @param $type For performance send directly the type of the object (post|taxonomy|user)
+	  * @param $ID ID of the current object
+	  * @return string acf key to use with get_field method
+	  */
+	 private static function getAcfKey($object, $type, $ID)
+	 {
+		 if ($type === 'post') {
+			 return $ID;
+		 } else if ($type === 'taxonomy') {
+			 return $object->taxonomy . '_' . $ID;
+		 } else if ($type === 'user') {
+			 return 'user_' . $ID;
+		 } else {
+			 return null;
+		 }
+	 }
 
 }

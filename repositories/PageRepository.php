@@ -16,11 +16,17 @@ class PageRepository {
     /**
      * Get class instance
      */
-    public static function getInstance()
+    public static function getInstance($fieldsNeeded = null)
     {
+        // Instanciate if null
         if (is_null(self::$instance)) {
             $childclass = get_called_class();
             self::$instance = new $childclass;
+        }
+
+        // Set field if user ask for it
+        if(!is_null($fieldsNeeded)) {
+            static::$fields = (isset(static::$$fieldsNeeded)) ? static::$$fieldsNeeded : [];
         }
 
         return self::$instance;

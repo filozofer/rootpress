@@ -192,9 +192,9 @@ class Rootpress
     }
 
     /**
-     * Transform a WP Post to an entity by using the associative array self::linkPostTypeToClass which have been populate during models declaration
+     * Transform a WP Object to an entity by using the associative array self::linkPostTypeToClass which have been populate during models declaration
      * This method is call at the beginning of the hydrate process by Hydratator using a filter
-     * @param $object WP_Post object to convert into model
+     * @param $object WP object to convert into model
      */
     public static function getEntityFromWPPost($object) {
         $WPC = null;
@@ -206,8 +206,11 @@ class Rootpress
         elseif (isset($object->taxonomy) && isset(self::$linkPostTypeToClass[$object->taxonomy])) {
             $WPC = new self::$linkPostTypeToClass[$object->taxonomy]();
         }
+        else if(get_class($object) === 'WP_User' && isset(self::$linkPostTypeToClass['WP_User'])) {
+            $WPC = new self::$linkPostTypeToClass['WP_User']();
+        }
 
-        // Importe all the key in the new object model
+        // Import all the key in the new object model
         if ($WPC != null) {
             foreach ($object as $key => $value) {
                 $WPC->$key = $value;
@@ -322,4 +325,4 @@ class Rootpress
 }
 
 // Register activation hook
-register_activation_hook( __FILE__,  ['Your_Plugin_Class_Name', 'rootpressActivation']);
+register_activation_hook( __FILE__,  ['Rootpress\Rootpress', 'rootpressActivation']);
