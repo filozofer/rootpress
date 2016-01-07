@@ -38,7 +38,7 @@ class CRUDTaxonomyRepository {
         }
         // Set depth if user ask for it
         if(!is_null($neededDepth)) {
-            static::$depth = (isset(static::$$neededDepth)) ? static::$$neededDepth : [];
+            static::$depth = $neededDepth;
         }
 
         return self::$instances[$childClass];
