@@ -28,12 +28,16 @@ namespace Rootpress\utils;
 	public static function hydrate(&$object, $fields = [], $depth = 2) {
 
 		// Case null or not an object
-		if(is_null($object) || !is_object($object)) {
+		if(is_null($object) || (!is_object($object) && !is_array($object))) {
 			return $object;
 		}
 		// Case WP_Error
 		else if(is_a($object, 'WP_Error')) {
 			return $object;
+		}
+		// Case ACF Repeater Field values
+		else if(is_array($object) && isset($fields['fields']) && !empty($fields['fields'])) {
+			return self::hydrates($object, $fields, $depth);
 		}
 
 		// Determine if object is a post, a taxonomy or a user
@@ -58,7 +62,7 @@ namespace Rootpress\utils;
 		$object = apply_filters('rootpress_before_hydrate', $object);
 
 		// Prevent infinite looping
-		if($depth > 0) {
+		if($depth > 0 || (is_array($fields) && !empty($fields))) {
 
 			// Call cached system if we have already cache this item since the beginning of the request (base on ID and fields when caching)
 			if(!self::$disableCache && isset(self::$objectCache[$type . '_' . $ID . '_depth_' . $depth . '_fields_' . $fieldsMD5])) {
@@ -109,6 +113,10 @@ namespace Rootpress\utils;
 					// If we declare specific fields to return, send them to Hydratator
 					$fieldsForThisKey = (isset($fields['fields']) && isset($fields['fields'][$key]) && is_array($fields['fields'][$key])) ? $fields['fields'][$key] : [];
 					$object->$key = self::hydrate($object->$key, $fieldsForThisKey, $depth - 1);
+				}
+				else if(is_array($object->$key) && isset($fields['fields']) && isset($fields['fields'][$key]) && is_array($fields['fields'][$key])) {
+					$fieldsForThisKey = $fields['fields'][$key];
+					$object->$key = self::hydrates($object->$key, $fieldsForThisKey, $depth - 1);
 				}
 			}
 
@@ -211,7 +219,7 @@ namespace Rootpress\utils;
 			 return $object->term_id;
 		 }
 		 else if(get_class($object) === 'WP_User') {
-			 return (isset($object->data)) ? $object->data->ID : null;
+			 return (isset($object->data)) ? $object->ID : null;
 		 }
 		 else {
 			 return null;
