@@ -16,7 +16,7 @@ class CRUDTaxonomyRepository {
     //Repository parameters
     public static $fields = [];
     public static $depth = 2;
-    public static $instance;
+    public static $instances;
 
     /**
      * Get class instance
