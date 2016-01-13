@@ -20,7 +20,7 @@ abstract class RootpressModel  {
 		'comment_status', 'ping_status', 'post_password', 'post_name', 'to_ping', 'pinged', 'post_modified',
 		'post_modified_gmt', 'post_content_filtered', 'post_parent', 'guid', 'menu_order', 'post_type',
 		'post_mime_type', 'comment_count', 'filter', 'post_title', 'post_date',
-		'term_group', 'term_taxonomy_id', 'taxonomy', 'description', 'parent', 'count', 'category',
+		'term_group', 'term_taxonomy_id', 'taxonomy', 'parent', 'count', 'category',
 		'post_tag', 'post_format', 'object_id'
 	];
 
