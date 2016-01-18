@@ -66,7 +66,7 @@ class CRUDTaxonomyRepository {
         //Hydrate them all
         $terms = Hydratator::hydrates($terms, static::$fields, static::$depth);
 
-        return $rubrics;
+        return $terms;
     }
 
     /**
