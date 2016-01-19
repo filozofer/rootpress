@@ -49,7 +49,6 @@ class MediaRepository {
                 case 'description': $result[$param] =  $attachment->post_content; break;
                 case 'src': $result[$param] = $attachment->guid; break;
                 case 'title': $result[$param] = $attachment->post_name; break;
-                case 'size': $result[$param] = $this->getFileSize(get_attached_file($mediaId)); break;
                 case 'id': $result[$param] = $attachment->ID; break;
                 default: break;
             }
