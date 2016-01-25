@@ -24,7 +24,7 @@ class CRUDTaxonomyRepository {
      * @param $neededFields array of fields to set as settings
      * @param $neededDepth int depth to set as settings
      */
-    public static function getInstance($fieldsNeeded = null, $neededDepth = null)
+    public static function getInstance($neededFields = null, $neededDepth = null)
     {
         $childClass = get_called_class();
 
@@ -33,8 +33,13 @@ class CRUDTaxonomyRepository {
         }
 
         // Set field if user ask for it
-        if(!is_null($fieldsNeeded)) {
-            static::$fields = (isset(static::$$fieldsNeeded)) ? static::$$fieldsNeeded : [];
+        if(!is_null($neededFields)) {
+            if(is_string($neededFields)) {
+                static::$fields = (isset(static::$$neededFields)) ? static::$$neededFields : [];
+            }
+            else if(is_array($neededFields)) {
+                static::$fields = $neededFields;
+            }
         }
         // Set depth if user ask for it
         if(!is_null($neededDepth)) {

@@ -33,7 +33,12 @@ class CRUDRepository
 
         // Set fields if user ask for it
         if(!is_null($neededFields)) {
-            static::$fields = (isset(static::$$neededFields)) ? static::$$neededFields : [];
+            if(is_string($neededFields)) {
+                static::$fields = (isset(static::$$neededFields)) ? static::$$neededFields : [];
+            }
+            else if(is_array($neededFields)) {
+                static::$fields = $neededFields;
+            }
         }
         // Set depth if user ask for it
         if(!is_null($neededDepth)) {
