@@ -229,7 +229,10 @@ class Rootpress
     public static function loadServices() {
 
         // Get list of service folders
-        $servicesDefaultFolderPaths = [plugin_dir_path(__FILE__) . 'services' => 'Rootpress\services'];
+        $servicesDefaultFolderPaths = [
+            plugin_dir_path(__FILE__) . 'services' => 'Rootpress\services',
+            get_stylesheet_directory() . '/services' => self::getCurrentThemeNamespace() . '\services'
+        ];
 
         //Load all services class and then start them
         self::loadFilesFromPaths('service', $servicesDefaultFolderPaths, function($classPath){
@@ -319,7 +322,7 @@ class Rootpress
         // Disable plugin and display error message 
         deactivate_plugins( basename( __FILE__ ) );
         $version = 'PHP' == $flag ? $php : $wp;
-        wp_die('<p>The <strong>Insert PLugin Name Here</strong> plugin requires'. $flag .' version '. $version .' or greater.</p>','Plugin Activation Error',  ['response' => 200, 'back_link' => TRUE]);
+        wp_die('<p><strong>Rootpress</strong> plugin requires'. $flag .' version '. $version .' or greater.</p>','Plugin Activation Error',  ['response' => 200, 'back_link' => TRUE]);
     }
 
 }
