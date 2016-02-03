@@ -35,6 +35,10 @@ namespace Rootpress\utils;
 		else if(is_a($object, 'WP_Error')) {
 			return $object;
 		}
+		// Fix for case in which ACF return an array which represent a user and not a WP_User : Detect by the presence of the 'user_registered' key and 'user_avatar' inside the array by supposing these key will not be use in usual array (possible error case)
+		else if(is_array($object) && array_key_exists('user_registered', $object) && array_key_exists('user_avatar', $object) && isset($object['ID'])) {
+			$object = get_user_by('ID', $object['ID']);
+		}
 		// Case ACF Repeater Field values
 		else if(is_array($object) && isset($fields['fields']) && !empty($fields['fields'])) {
 			return self::hydrates($object, $fields, $depth);
