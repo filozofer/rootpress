@@ -38,8 +38,9 @@ class RestJsonApiService {
     public static function routerApiService($template) {
     	global $wp_query;
 
+
     	// Template call by wordpress corresponding to the API template
-    	if(basename($template, '.php') === 'page' && strpos($_SERVER['REQUEST_URI'], '/' . self::getApiKeyword() . '/') === 0) {
+    	if( basename($template, '.php') === 'page' && ( isset($wp_query->query) && isset($wp_query->query['pagename']) && ($wp_query->query['pagename'] == self::getApiKeyword()) )) {
 
     		// Then get the action
     		$action = (isset($wp_query->query_vars['action'])) ? $wp_query->query_vars['action'] : null;
