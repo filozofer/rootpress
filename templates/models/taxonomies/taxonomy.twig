@@ -1,0 +1,46 @@
+<?php
+{% import "rootpress-macros.twig" as m %}
+
+namespace {{ namespace }}\models\taxonomies;
+
+use Rootpress\models\RootpressModel;
+
+/**
+ * {{ class_name }} Taxonomy Model
+ * @linked_post_type {{ linked_post_type }}
+ */
+class {{ class_name }} extends RootpressModel
+{
+
+    //Taxonomy name
+    public static $linked_taxonomy = '{{ taxonomy_name }}';
+
+    //Linked post type (array of post type)
+    public static $linked_post_type = ['{{ linked_post_type }}'];
+
+    /**
+     * Declare Taxonomy to Wordpress
+     */
+    public static function taxonomyDeclaration() {
+
+        $labels = [
+{% for key, label in labels %}
+{% if label %}
+            '{{ key }}' => {{ m.translate(label, text_domain, translate) }},
+{% endif %}
+{% endfor %}
+        ];
+        $args = [
+            'labels'                     => $labels,
+        ];
+        register_taxonomy(self::$linked_taxonomy, self::$linked_post_type, $args);
+    }
+
+    /**
+     * Construct function to change some params after hydratation
+     */
+    public function construct() {
+
+    }
+
+}

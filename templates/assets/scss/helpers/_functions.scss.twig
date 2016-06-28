@@ -1,0 +1,27 @@
+
+/**
+ * Helpers functions
+ */
+
+@mixin font-size($sizeValue: 16){
+    font-size: $sizeValue + px; //fallback for old browsers
+    font-size: (0.0625 * $sizeValue) + rem;
+}
+
+@mixin line-height($heightValue: 16){
+    line-height: $heightValue + px; //fallback for old browsers
+    line-height: (0.0625 * $heightValue) + rem;
+}
+
+@mixin font($sizeValue: 16, $heightValue: 16){
+    font-size: $sizeValue + px; //fallback for old browsers
+    font-size: (0.0625 * $sizeValue) + rem;
+    line-height: $heightValue + px; //fallback for old browsers
+    line-height: (0.0625 * $heightValue) + rem;
+}
+
+@mixin border-radius($radius) {
+    -webkit-border-radius: $radius;
+    border-radius: $radius + px;
+    background-clip: padding-box;  /* stops bg color from leaking outside the border: */
+}

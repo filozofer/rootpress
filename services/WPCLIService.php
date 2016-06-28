@@ -46,12 +46,21 @@ class WPCLIService extends WP_CLI_Command {
      * options:
      *   - theme
      *   - sass
-     *   - timber-layout
+     *   - timber-twig
      *   - model
      *   - repository
      *   - controller
      *   - service
      * ---
+     *
+     * [--type=<type>]
+     * : Allow to choose the model type you want to generate
+     * ---
+     * options:
+     *   - custom-type
+     *   - taxonomy
+     * ---
+
      *
      * ## EXAMPLES
      *
@@ -68,6 +77,15 @@ class WPCLIService extends WP_CLI_Command {
 
             // Generate theme
             case 'theme': $this->generateTheme($args, $assoc_args); break;
+
+            // Generate sass
+            case 'sass': $this->generateSass($args, $assoc_args); break;
+
+            // Generate timber-twig
+            case 'timber-twig': $this->generateTimberLayout($args, $assoc_args); break;
+
+            // Generate model
+            case 'model': $this->generateModel($args, $assoc_args); break;
 
             // Cannot happen
             default:
@@ -111,6 +129,7 @@ class WPCLIService extends WP_CLI_Command {
             'template'      => WPCLIService::askToUser('What is your parent theme ?', null, $themes),
             'version'       => WPCLIService::askToUser('What is your Theme version number ?', '1.0.0'),
         ];
+        $newTheme['text_domain'] = WPCLIService::askToUser('What is your Theme text-domain ?', strtolower(str_replace(' ', '-', $newTheme['name'])));
         $newTheme['namespace'] = $newTheme['spaceless_name'] = str_replace(' ', '', $newTheme['name']);
 
         // Rootpress theme architecture
@@ -120,7 +139,8 @@ class WPCLIService extends WP_CLI_Command {
                 'assets' => [
                     'css',
                     'img',
-                    'js'
+                    'js',
+                    'fonts'
                 ],
                 'controllers',
                 'models' => [
@@ -155,6 +175,200 @@ class WPCLIService extends WP_CLI_Command {
         // Success !
         WP_CLI::success('Your new theme has been generated !');
     }
+
+
+    /**
+     * Generate SASS basic architecture
+     * @command wp rootpress generate sass
+     */
+    private function generateSass($args, $assoc_args) {
+
+        // Get current theme path
+        $path = get_stylesheet_directory() . '/assets';
+
+        // Generate folders for sass architecture
+        $this->createFoldersArchitecture([
+            'scss' => [
+                'base',
+                'components',
+                'helpers',
+                'layout',
+                'pages'
+            ]
+        ], $path);
+
+        // Generate all the needed files for basic sass architecture
+        $this->generateFile($path . '/scss/base/_colors.scss', 'assets/scss/base/_colors.scss.twig');
+        $this->generateFile($path . '/scss/base/_fonts.scss', 'assets/scss/base/_fonts.scss.twig');
+        $this->generateFile($path . '/scss/base/_reset.scss', 'assets/scss/base/_reset.scss.twig');
+        $this->generateFile($path . '/scss/helpers/_variables.scss', 'assets/scss/helpers/_variables.scss.twig');
+        $this->generateFile($path . '/scss/helpers/_functions.scss', 'assets/scss/helpers/_functions.scss.twig');
+        $this->generateFile($path . '/scss/helpers/_mediaqueries.scss', 'assets/scss/helpers/_mediaqueries.scss.twig');
+        $this->generateFile($path . '/scss/layout/_layout.scss', 'assets/scss/layout/_layout.scss.twig');
+        $this->generateFile($path . '/scss/layout/_header.scss', 'assets/scss/layout/_header.scss.twig');
+        $this->generateFile($path . '/scss/layout/_footer.scss', 'assets/scss/layout/_footer.scss.twig');
+        $this->generateFile($path . '/scss/main.scss', 'assets/scss/main.scss.twig');
+
+        // Success !
+        WP_CLI::success('Your basic Sass architecture has been generated !');
+    }
+
+    /**
+     * Generate twig basic architecture for using Timber
+     * @command wp rootpress generate timber-twig
+     */
+    private function generateTimberLayout($args, $assoc_args) {
+
+        // Get current theme path
+        $path = get_stylesheet_directory();
+
+        // Basic twig layout
+        $this->generateFile($path . '/views/layout.twig', 'views/layout.twig.twig');
+
+        // Override default page template ?
+        if(WPCLIService::askForUserCommit('Do you want to override default page template ?', 'y')) {
+            $this->generateFile($path . '/page.php', 'page.php.twig');
+            $this->generateFile($path . '/views/page.twig', 'views/page.twig.twig');
+        }
+
+        // Override header ?
+        if(WPCLIService::askForUserCommit('Do you want to override theme header ?', 'y')) {
+            $this->generateFile($path . '/header.php', 'header.php.twig');
+            $this->generateFile($path . '/views/header.twig', 'views/header.twig.twig');
+        }
+
+        // Override footer ?
+        if(WPCLIService::askForUserCommit('Do you want to override theme footer ?', 'y')) {
+            $this->generateFile($path . '/footer.php', 'footer.php.twig');
+            $this->generateFile($path . '/views/footer.twig', 'views/footer.twig.twig');
+        }
+
+        // Success !
+        WP_CLI::success('Your basic twig architecture has been generated !');
+    }
+
+    /**
+     * Generate a new model
+     * @command wp rootpress generate model
+     */
+    private function generateModel($args, $assoc_args)
+    {
+        // Extract type from command param or ask user if not exist
+        $which = (isset($assoc_args['type'])) ? $assoc_args['type'] : WPCLIService::askToUser('Generate model for custom type or taxonomy ?', 0, [
+            'custom-type' => 'Custom Type',
+            'taxonomy'  => 'Taxonomy'
+        ]);
+        // Generate the proper model (custom type or taxonomy)
+        if($which === 'custom-type') {
+            $this->generateModelCT($args, $assoc_args);
+        }
+        else {
+            $this->generateModelT($args, $assoc_args);
+        }
+    }
+
+    /**
+     * Generate a new custom type model
+     * @command wp rootpress generate model --type=custom-type
+     */
+    private function generateModelCT($args, $assoc_args) {
+
+        // Get current theme path
+        $path = get_stylesheet_directory();
+
+        // Get current theme
+        $currentTheme = wp_get_theme();
+
+        // Ask to user all the needed informations
+        $newModel = [
+            'namespace'     => str_replace(' ', '', $currentTheme->get('Name')),
+            'text_domain'   => $currentTheme->get('TextDomain'),
+            'class_name'    => WPCLIService::askToUser('Model class name ?'),
+            'posttype_name' => WPCLIService::askToUser('Model post_type name ?'),
+            'label_name'    => WPCLIService::askToUser('Model label name (generally plural) ?'),
+            'description'   => WPCLIService::askToUser('Model description ?', ''),
+            'menu_icon'     => WPCLIService::askToUser('Model menu icon class ?', 'dashicons-admin-post'),
+            'translate'     => WPCLIService::askForUserCommit('Do you want to translate model wordings ?', 'f')
+        ];
+
+        // Labels custom ?
+        if(WPCLIService::askForUserCommit('Do you want to customize labels ?', 'y')) {
+            $newModel += [
+                'labels' => [
+                    'name' => WPCLIService::askToUser('name: (Posts)', ''),
+                    'singular_name' => WPCLIService::askToUser('singular_name: (Post)', ''),
+                    'menu_name' => WPCLIService::askToUser('menu_name: (Posts)', ''),
+                    'parent_item_colon' => WPCLIService::askToUser('parent_item_colon: (Parent Post)', ''),
+                    'all_items' => WPCLIService::askToUser('all_items: (All Posts)', ''),
+                    'view_item' => WPCLIService::askToUser('view_item: (View Post)', ''),
+                    'add_new_item' => WPCLIService::askToUser('add_new_item: (Add New Post)', ''),
+                    'add_new' => WPCLIService::askToUser('add_new: (Add New)', ''),
+                    'edit_item' => WPCLIService::askToUser('edit_item: (Edit Post)', ''),
+                    'search_items' => WPCLIService::askToUser('search_items: (Search Posts)', ''),
+                    'not_found' => WPCLIService::askToUser('not_found: (No Post found)', ''),
+                    'not_found_in_trash' => WPCLIService::askToUser('not_found_in_trash: (No Post found in trash)', ''),
+                ]
+            ];
+        }
+
+        // Create the model
+        WPCLIService::generateFile($path . '/models/customtypes/' . $newModel['class_name'] . '.php' , 'models/customtypes/model.twig', $newModel);
+
+        // Success !
+        WP_CLI::success('Your new model for ' . $newModel['class_name'] . ' has been generated !');
+    }
+
+    /**
+     * Generate a new taxonomy model
+     * @command wp rootpress generate model --type=taxonomy
+     */
+    private function generateModelT($args, $assoc_args) {
+
+        // Get current theme path
+        $path = get_stylesheet_directory();
+
+        // Get current theme
+        $currentTheme = wp_get_theme();
+
+        // Ask to user all the needed informations
+        $newModel = [
+            'namespace'     => str_replace(' ', '', $currentTheme->get('Name')),
+            'text_domain'   => $currentTheme->get('TextDomain'),
+            'class_name'    => WPCLIService::askToUser('Taxonomy class name ?'),
+            'taxonomy_name' => WPCLIService::askToUser('Taxonomy post_type name ?'),
+            'linked_post_type' => WPCLIService::askToUser('Taxonomy linked post type ?'),
+            'translate'     => WPCLIService::askForUserCommit('Do you want to translate model wordings ?', 'f')
+        ];
+
+        // Labels custom ?
+        if(WPCLIService::askForUserCommit('Do you want to customize labels ?', 'y')) {
+            $newModel += [
+                'labels' => [
+                    'name' => WPCLIService::askToUser('name: (Categories)', ''),
+                    'singular_name' => WPCLIService::askToUser('singular_name: (Category)', ''),
+                    'all_items' => WPCLIService::askToUser('all_items: (All the categories)', ''),
+                    'parent_item' => WPCLIService::askToUser('parent_item: (Parent Category)', ''),
+                    'new_item_name' => WPCLIService::askToUser('new_item_name: (New Category Name)', ''),
+                    'add_new_item' => WPCLIService::askToUser('add_new_item: (Add New Category)', ''),
+                    'edit_item' => WPCLIService::askToUser('edit_item: (Edit Category)', ''),
+                    'update_item' => WPCLIService::askToUser('update_item: (Update Category)', ''),
+                    'view_item' => WPCLIService::askToUser('view_item: (View Category)', ''),
+                    'add_or_remove_items' => WPCLIService::askToUser('add_or_remove_items: (Add or remove Category)', ''),
+                    'choose_from_most_used' => WPCLIService::askToUser('choose_from_most_used: (Choose from the most used categories)', ''),
+                    'popular_items' => WPCLIService::askToUser('popular_items: (Popular Categories)', ''),
+                    'search_items' => WPCLIService::askToUser('search_items: (Search Categories)', ''),
+                    'not_found' => WPCLIService::askToUser('not_found: (No categories found)', ''),
+                ]
+            ];
+        }
+
+        // Create the model
+        WPCLIService::generateFile($path . '/models/taxonomies/' . $newModel['class_name'] . '.php' , 'models/taxonomies/taxonomy.twig', $newModel);
+
+        // Success !
+        WP_CLI::success('Your new model for ' . $newModel['class_name'] . ' has been generated !');
+    }
+
 
     /**
      * Create a folder architecture base on a array architecture
@@ -196,12 +410,12 @@ class WPCLIService extends WP_CLI_Command {
      */
     private static function askToUser($question, $default = null, $options = null) {
 
-        // Preprend question with double arrow
-        $question = '>> ' . $question;
+        // Preprend question with double arrow and append with a space
+        $question = '>> ' . $question . ' ';
 
         // Tell user what is the default value
         if(!is_null($default) && !empty($default)) {
-            $question .= ' [' . $default . ']';
+            $question .= '[' . $default . '] ';
         }
 
         // Ask the question
