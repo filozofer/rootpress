@@ -1,0 +1,49 @@
+<?php
+
+namespace {{ namespace }}\controllers;
+
+use Timber;
+
+/**
+ * {{ class_name }}
+ */
+class {{ class_name }}
+{
+
+    /**
+     * Router function for this controller
+     */
+    public static function router()
+    {
+{% if example %}
+        //Register Actions
+        add_action('controller_action_single-example', ['{{ namespace }}\controllers\{{ class_name }}', 'singleExampleAction']);
+{% endif %}
+    }
+
+    /***********
+     * Actions *
+     ***********/
+
+{% if example %}
+    /**
+     * Action for single Example
+     */
+    public static function singleExampleAction()
+    {
+        global $data;
+        global $post;
+
+        //Create timber context
+        $data = Timber::get_context();
+
+        //Get current post (needed if you wanted to print the content of the post type by interpreted shortcodes)
+        $data['post'] = new TimberPost();
+
+        //Get current sample
+        $data['example'] = ExampleRepository::getInstance()->findOne($post->ID);
+
+    }
+{% endif %}
+
+}

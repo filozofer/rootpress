@@ -1,0 +1,11 @@
+
+{# Macros #}
+
+{# Translate a string or not #}
+{% macro translate(val, textdomain, translate) %}
+    {%- if translate and textdomain -%}
+        __("{{ val }}", '{{ textdomain }}')
+    {%- else -%}
+        "{{ val }}"
+    {%- endif -%}
+{% endmacro %}

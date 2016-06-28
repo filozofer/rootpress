@@ -1,5 +1,6 @@
 {
 	"services": {
+        "Rootpress\\services\\WPCLIService": true,
 		"Rootpress\\services\\RestJsonApiService": false,
 		"Rootpress\\services\\VisualComposerService": false
 	}

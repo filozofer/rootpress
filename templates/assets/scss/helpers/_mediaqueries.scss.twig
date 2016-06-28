@@ -1,0 +1,50 @@
+
+/**
+ * Media Queries for responsive design
+ */
+
+// Change values as needed
+$desktop-width: 1300px;
+$tablet-width : 800px;
+
+@mixin desktop(){ // Media Query Desktop
+    @media all and (min-width: $tablet-width) {
+        @content;
+    }
+}
+
+@mixin tablet(){ // Media Query Tablette
+    @media all and (min-width: $tablet-width) and (max-width: $desktop-width -1px) {
+        @content;
+    }
+}
+
+@mixin mobile(){ // Media Query Mobile
+    @media all and (max-width: ($tablet-width - 1px)) {
+        @content;
+    }
+}
+
+@mixin not-desktop () {
+    @media all and (max-width: ($desktop-width - 1px)) {
+        @content;
+    }
+}
+
+@mixin not-mobile () {
+    @media all and (min-width: $tablet-width) {
+        @content;
+    }
+}
+
+@mixin media-queries($width){
+    @media all and (max-width: ($width + px)) {
+        @content;
+    }
+}
+
+@mixin media-min-width($width){
+    @media all and (min-width: ($width)) {
+        @content;
+    }
+}
