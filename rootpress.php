@@ -7,7 +7,7 @@
  Author: Maxime Tual
  Text Domain: rootpress
  Domain path: /languages/
- Version: 0.1-alpha
+ Version: 0.3.0-beta
 */
 
 namespace Rootpress;
