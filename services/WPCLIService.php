@@ -87,6 +87,9 @@ class WPCLIService extends WP_CLI_Command {
             // Generate model
             case 'model': $this->generateModel($args, $assoc_args); break;
 
+            // Generate service
+            case 'service': $this->generateService($args, $assoc_args); break;
+
             // Cannot happen
             default:
         }
@@ -367,6 +370,51 @@ class WPCLIService extends WP_CLI_Command {
 
         // Success !
         WP_CLI::success('Your new model for ' . $newModel['class_name'] . ' has been generated !');
+    }
+
+    /**
+     * Generate a new service
+     * @command wp rootpress generate service
+     */
+    private function generateService($args, $assoc_args) {
+
+        // Get current theme path
+        $path = get_stylesheet_directory();
+
+        // Get current theme
+        $currentTheme = wp_get_theme();
+        $namespace = str_replace(' ', '', $currentTheme->get('Name'));
+
+        // Ask to user all the needed informations
+        $newService = [
+            'namespace'     => $namespace,
+            'class_name'    => WPCLIService::askToUser('Service class name ?')
+        ];
+
+        // Create services folder if not exist in theme
+        if(!is_dir($path . '/services')) {
+            mkdir($path . '/services');
+        }
+
+        // Create the service class file
+        WPCLIService::generateFile($path . '/services/' . $newService['class_name'] . '.php' , 'services/service.twig', $newService);
+
+        // Create or update the config file if user ask for it
+        if(WPCLIService::askForUserCommit('Do you want to enable your new service ?', 'y')) {
+
+            // Get actual rootpress config which contains the list of enable services
+            $actualConfig = (file_exists($path . '/rootpress-config.json'))  ? json_decode(file_get_contents($path . '/rootpress-config.json'), true) : ['services' => []];
+
+            // Add the new line to config
+            $actualConfig['services'][$namespace . '\\services\\' . $newService['class_name']] = true;
+
+            // Write config file updated
+            file_put_contents($path . '/rootpress-config.json', json_encode($actualConfig, (defined('JSON_PRETTY_PRINT') ? JSON_PRETTY_PRINT : 0)));
+
+        }
+
+        // Success !
+        WP_CLI::success('Your new service has been generated !');
     }
 
 
