@@ -60,7 +60,15 @@ class WPCLIService extends WP_CLI_Command {
      *   - custom-type
      *   - taxonomy
      * ---
-
+     *
+     * [--name=<name>]
+     * : Allow to choose the class name of the genereated file
+     *
+     * [--custom-type=<custom-type>]
+     * : Allow to choose the linked custom type to the generated file
+     *
+     * [--example]
+     * : Generate example code. Use --no-example for opposite.
      *
      * ## EXAMPLES
      *
@@ -90,25 +98,16 @@ class WPCLIService extends WP_CLI_Command {
             // Generate service
             case 'service': $this->generateService($args, $assoc_args); break;
 
+            // Generate controller
+            case 'controller': $this->generateController($args, $assoc_args); break;
+
+            // Generate repository
+            case 'repository': $this->generateRepository($args, $assoc_args); break;
+
             // Cannot happen
             default:
         }
 
-    }
-
-    /**
-     * Debug function
-     *
-     * ## EXAMPLES
-     *
-     *     wp rootpress playground
-     *
-     */
-    public function playground($args, $assoc_args) {
-
-
-        // Success !
-        WP_CLI::success('END OF Playground !');
     }
 
     /**
@@ -261,12 +260,30 @@ class WPCLIService extends WP_CLI_Command {
             'custom-type' => 'Custom Type',
             'taxonomy'  => 'Taxonomy'
         ]);
+
         // Generate the proper model (custom type or taxonomy)
         if($which === 'custom-type') {
-            $this->generateModelCT($args, $assoc_args);
+            $config = $this->generateModelCT($args, $assoc_args);
         }
         else {
-            $this->generateModelT($args, $assoc_args);
+            $config = $this->generateModelT($args, $assoc_args);
+        }
+
+        // Ask if we need to generate a controller for that model
+        if(WPCLIService::askForUserCommit('Generate a controller class for that model ?', 'y')) {
+            WP_CLI::run_command(['rootpress', 'generate', 'controller'], [
+                'name'      => $config['class_name'] . 'Controller',
+                'example'   => (isset($assoc_args['example'])) ? $assoc_args['example'] : false
+            ]);
+        }
+
+        // Ask if we need to generate a repository for that model
+        if(WPCLIService::askForUserCommit('Generate a repository class for that model ?', 'y')) {
+            WP_CLI::run_command(['rootpress', 'generate', 'repository'], [
+                'name'          => $config['class_name'] . 'Repository',
+                'custom-type'   => isset($config['posttype_name']) ? $config['posttype_name'] : $config['taxonomy_name'],
+                'example'       => (isset($assoc_args['example'])) ? $assoc_args['example'] : false
+            ]);
         }
     }
 
@@ -291,7 +308,7 @@ class WPCLIService extends WP_CLI_Command {
             'label_name'    => WPCLIService::askToUser('Model label name (generally plural) ?'),
             'description'   => WPCLIService::askToUser('Model description ?', ''),
             'menu_icon'     => WPCLIService::askToUser('Model menu icon class ?', 'dashicons-admin-post'),
-            'translate'     => WPCLIService::askForUserCommit('Do you want to translate model wordings ?', 'f')
+            'translate'     => WPCLIService::askForUserCommit('Do you want to translate model wordings ?', 'n')
         ];
 
         // Labels custom ?
@@ -319,6 +336,7 @@ class WPCLIService extends WP_CLI_Command {
 
         // Success !
         WP_CLI::success('Your new model for ' . $newModel['class_name'] . ' has been generated !');
+        return $newModel;
     }
 
     /**
@@ -338,9 +356,9 @@ class WPCLIService extends WP_CLI_Command {
             'namespace'     => str_replace(' ', '', $currentTheme->get('Name')),
             'text_domain'   => $currentTheme->get('TextDomain'),
             'class_name'    => WPCLIService::askToUser('Taxonomy class name ?'),
-            'taxonomy_name' => WPCLIService::askToUser('Taxonomy post_type name ?'),
+            'taxonomy_name' => WPCLIService::askToUser('Taxonomy slug name ?'),
             'linked_post_type' => WPCLIService::askToUser('Taxonomy linked post type ?'),
-            'translate'     => WPCLIService::askForUserCommit('Do you want to translate model wordings ?', 'f')
+            'translate'     => WPCLIService::askForUserCommit('Do you want to translate model wordings ?', 'n')
         ];
 
         // Labels custom ?
@@ -370,6 +388,60 @@ class WPCLIService extends WP_CLI_Command {
 
         // Success !
         WP_CLI::success('Your new model for ' . $newModel['class_name'] . ' has been generated !');
+        return $newModel;
+    }
+
+    /**
+     * Generate a new controller
+     * @command wp rootpress generate controller
+     */
+    private function generateController($args, $assoc_args) {
+
+        // Get current theme path
+        $path = get_stylesheet_directory();
+
+        // Get current theme
+        $currentTheme = wp_get_theme();
+
+        // Ask to user all the needed informations
+        $newController = [
+            'namespace'     => str_replace(' ', '', $currentTheme->get('Name')),
+            'class_name'    => (isset($assoc_args['name'])) ? $assoc_args['name'] : WPCLIService::askToUser('Controller class name ?'),
+            'example'       => (isset($assoc_args['example'])) ? $assoc_args['example'] : WPCLIService::askForUserCommit('Do you want example code inside ?', 'n'),
+        ];
+
+        // Create the controller
+        WPCLIService::generateFile($path . '/controllers/' . $newController['class_name'] . '.php' , 'controllers/controller.twig', $newController);
+
+        // Success !
+        WP_CLI::success('Your new controller has been generated !');
+    }
+
+    /**
+     * Generate a new repository
+     * @command wp rootpress generate repository
+     */
+    private function generateRepository($args, $assoc_args) {
+
+        // Get current theme path
+        $path = get_stylesheet_directory();
+
+        // Get current theme
+        $currentTheme = wp_get_theme();
+
+        // Ask to user all the needed informations
+        $newRepository = [
+            'namespace'     => str_replace(' ', '', $currentTheme->get('Name')),
+            'class_name'    => (isset($assoc_args['name'])) ? $assoc_args['name'] : WPCLIService::askToUser('Repository class name ?'),
+            'associate_custom_type' => (isset($assoc_args['custom-type'])) ? $assoc_args['custom-type'] : WPCLIService::askToUser('What is the associate post type ?'),
+            'example'       => (isset($assoc_args['example'])) ? $assoc_args['example'] : WPCLIService::askForUserCommit('Do you want example code inside ?', 'n')
+        ];
+
+        // Create the repository
+        WPCLIService::generateFile($path . '/repositories/' . $newRepository['class_name'] . '.php' , 'repositories/repository.twig', $newRepository);
+
+        // Success !
+        WP_CLI::success('Your new repository has been generated !');
     }
 
     /**
@@ -519,7 +591,7 @@ class WPCLIService extends WP_CLI_Command {
         // Needed answer ?
         $neededAnswer = ' [y/n]';
         $neededAnswer = ($mandatory === 'y') ? ' [Y/n]' : $neededAnswer;
-        $neededAnswer = ($mandatory === 'f') ? ' [y/N]' : $neededAnswer;
+        $neededAnswer = ($mandatory === 'n') ? ' [y/N]' : $neededAnswer;
         $question .= $neededAnswer;
 
         // Print question and ask for answer
