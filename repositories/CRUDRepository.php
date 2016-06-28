@@ -14,19 +14,38 @@ class CRUDRepository
 
     // Repository parameters
     public static $fields = [];
-    public static $instance;
+    public static $depth = 2;
+    public static $instances;
 
     /**
-     *
+     * Get class instance
+     * $instances is an array which contains each instanced child class
+     * @param $neededFields array of fields to set as settings
+     * @param $neededDepth int depth to set as settings
      */
-    public static function getInstance()
+    public static function getInstance($neededFields = null, $neededDepth = null)
     {
-        if (is_null(self::$instance)) {
-            $childclass = get_called_class();
-            self::$instance = new $childclass;
+        $childClass = get_called_class();
+
+        if(!isset(self::$instances[$childClass])){
+            self::$instances[$childClass] = new $childClass;
         }
 
-        return self::$instance;
+        // Set fields if user ask for it
+        if(!is_null($neededFields)) {
+            if(is_string($neededFields)) {
+                static::$fields = (isset(static::$$neededFields)) ? static::$$neededFields : [];
+            }
+            else if(is_array($neededFields)) {
+                static::$fields = $neededFields;
+            }
+        }
+        // Set depth if user ask for it
+        if(!is_null($neededDepth)) {
+            static::$depth = $neededDepth;
+        }
+
+        return self::$instances[$childClass];
     }
 
     /**
@@ -36,7 +55,7 @@ class CRUDRepository
     public function findOne($postId)
     {
         $post = get_post($postId);
-        return Hydratator::hydrate($post, self::$fields);
+        return Hydratator::hydrate($post, static::$fields, static::$depth);
     }
 
     /**
@@ -44,7 +63,6 @@ class CRUDRepository
      */
     public function findAll()
     {
-
         //Magazines
         $posts = get_posts([
             'post_type' => static::$associate_post_type,
@@ -53,7 +71,7 @@ class CRUDRepository
         ]);
 
         //Hydrate them
-        return Hydratator::hydrates($posts, self::$fields);
+        return Hydratator::hydrates($posts, static::$fields, static::$depth);
     }
 
     /**
@@ -80,7 +98,7 @@ class CRUDRepository
      */
     public function remove($postId, $trash = true)
     {
-        return wp_delete_post($postid, !$trash);
+        return wp_delete_post($postId, !$trash);
     }
 
     /**

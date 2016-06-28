@@ -7,12 +7,10 @@
  Author: Maxime Tual
  Text Domain: rootpress
  Domain path: /languages/
- Version: 0.1-alpha
+ Version: 0.3.0-beta
 */
 
 namespace Rootpress;
-
-use LeVillage\controllers\BiduleTruc;
 
 // Deploy the roots !
 Rootpress::deployTheRoots();
@@ -45,6 +43,8 @@ class Rootpress
 
         // Controllers System
         add_filter('template_include', ['Rootpress\Rootpress', 'controllersSystem'], 99);
+        add_action('get_header', ['Rootpress\Rootpress', 'controllersSystemHeader'], 99);
+        add_action('get_footer', ['Rootpress\Rootpress', 'controllersSystemFooter'], 99);
         self::declareControllersRouter();
 
         // Models System
@@ -54,11 +54,6 @@ class Rootpress
         // Launch Rootpress Services according to rootpress configuration
         self::loadServices();
 
-        /*
-         Finish Skeleton
-         Views
-         Templates
-        */
     }
 
     /**
@@ -139,6 +134,12 @@ class Rootpress
         do_action('controller_action_' . $template_filename);
         return $template_path;
     }
+    public static function controllersSystemHeader() {
+        do_action('controller_action_header');
+    }
+    public static function controllersSystemFooter() {
+        do_action('controller_action_footer');
+    }
 
     /**
      * Call router method for each controller which allow to declare the mapping of templates and controller
@@ -191,9 +192,9 @@ class Rootpress
     }
 
     /**
-     * Transform a WP Post to an entity by using the associative array self::linkPostTypeToClass which have been populate during models declaration
+     * Transform a WP Object to an entity by using the associative array self::linkPostTypeToClass which have been populate during models declaration
      * This method is call at the beginning of the hydrate process by Hydratator using a filter
-     * @param $object WP_Post object to convert into model
+     * @param $object WP object to convert into model
      */
     public static function getEntityFromWPPost($object) {
         $WPC = null;
@@ -205,8 +206,11 @@ class Rootpress
         elseif (isset($object->taxonomy) && isset(self::$linkPostTypeToClass[$object->taxonomy])) {
             $WPC = new self::$linkPostTypeToClass[$object->taxonomy]();
         }
+        else if(get_class($object) === 'WP_User' && isset(self::$linkPostTypeToClass['WP_User'])) {
+            $WPC = new self::$linkPostTypeToClass['WP_User']();
+        }
 
-        // Importe all the key in the new object model
+        // Import all the key in the new object model
         if ($WPC != null) {
             foreach ($object as $key => $value) {
                 $WPC->$key = $value;
@@ -225,7 +229,10 @@ class Rootpress
     public static function loadServices() {
 
         // Get list of service folders
-        $servicesDefaultFolderPaths = [plugin_dir_path(__FILE__) . 'services' => 'Rootpress\services'];
+        $servicesDefaultFolderPaths = [
+            plugin_dir_path(__FILE__) . 'services' => 'Rootpress\services',
+            get_stylesheet_directory() . '/services' => self::getCurrentThemeNamespace() . '\services'
+        ];
 
         //Load all services class and then start them
         self::loadFilesFromPaths('service', $servicesDefaultFolderPaths, function($classPath){
@@ -295,4 +302,30 @@ class Rootpress
         }
     }
 
+    /**
+     * Plugin Activation hook function to check for Minimum PHP and WordPress versions
+     * @param string $wp Minimum version of WordPress required for this plugin
+     * @param string $php Minimum version of PHP required for this plugin
+     */
+    public static function rootpressActivation($wp = '4.0', $php = '5.2.4') {
+        global $wp_version;
+
+        // Compare version
+        if(version_compare(PHP_VERSION, $php, '<')) {
+            $flag = 'PHP';
+        }
+        elseif(version_compare($wp_version, $wp, '<' )) {
+            $flag = 'WordPress';
+        }
+        else { return; }
+
+        // Disable plugin and display error message 
+        deactivate_plugins( basename( __FILE__ ) );
+        $version = 'PHP' == $flag ? $php : $wp;
+        wp_die('<p><strong>Rootpress</strong> plugin requires'. $flag .' version '. $version .' or greater.</p>','Plugin Activation Error',  ['response' => 200, 'back_link' => TRUE]);
+    }
+
 }
+
+// Register activation hook
+register_activation_hook( __FILE__,  ['Rootpress\Rootpress', 'rootpressActivation']);

@@ -7,6 +7,22 @@ namespace Rootpress\repositories;
  */
 class OptionRepository {
 
+    // Repository parameters
+    public static $instance;
+
+    /**
+     * Get class instance
+     */
+    public static function getInstance()
+    {
+        if (is_null(self::$instance)) {
+            $childclass = get_called_class();
+            self::$instance = new $childclass;
+        }
+
+        return self::$instance;
+    }
+
     /**
      * Find one option by key 
      * @param $key string option key

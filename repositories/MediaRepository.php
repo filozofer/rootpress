@@ -7,6 +7,21 @@ namespace Rootpress\repositories;
  */
 class MediaRepository {
 
+    // Repository parameters
+    public static $instance;
+
+    /**
+     * Get class instance
+     */
+    public static function getInstance()
+    {
+        if (is_null(self::$instance)) {
+            $childclass = get_called_class();
+            self::$instance = new $childclass;
+        }
+
+        return self::$instance;
+    }
 
 	/**
      * Find one media by ID and return all it's meta
@@ -34,7 +49,6 @@ class MediaRepository {
                 case 'description': $result[$param] =  $attachment->post_content; break;
                 case 'src': $result[$param] = $attachment->guid; break;
                 case 'title': $result[$param] = $attachment->post_name; break;
-                case 'size': $result[$param] = $this->getFileSize(get_attached_file($mediaId)); break;
                 case 'id': $result[$param] = $attachment->ID; break;
                 default: break;
             }

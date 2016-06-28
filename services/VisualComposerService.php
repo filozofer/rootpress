@@ -23,14 +23,21 @@ class VisualComposerService {
         
     }
 
+    // Keep trace of error message
+    public static $errorMessageAlreadyPrint = false;
+
     /**
      * Allow to declare visual composer widgets in the project
      * @param $widgetDeclaration array of string, each string is the name of an entity which represent a vc widget
      */
     public static function declareVisualComposerWidgets() {
+
+        // Check for visual composer
+        if(!self::checkIfVisualComposerIsEnable()) { return; }
+
         // Get list of widgets folders
         $widgetsDefaultFolderPaths = [
-            get_stylesheet_directory() . '/widgets' => Rootpress::getCurrentThemeNamespace() . '\visualcomposer\widgets'
+            get_stylesheet_directory() . '/visualcomposer/widgets' => Rootpress::getCurrentThemeNamespace() . '\visualcomposer\widgets'
         ];
 
         //Load all widgets class and then start them
@@ -46,6 +53,10 @@ class VisualComposerService {
      * Allow to declare custom visual composer field for widgets
      */
     public static function declareVisualComposerFields() {
+
+        // Check for visual composer
+        if(!self::checkIfVisualComposerIsEnable()) { return; }
+
         // Get list of visual composer fields folders
         $widgetsFieldsDefaultFolderPaths = [
             Rootpress::getRootpressDirPath() . '/visualcomposer/fields' => 'Rootpress\visualcomposer\fields',
@@ -67,6 +78,27 @@ class VisualComposerService {
             }
 
         });
+    }
+
+    /**
+     * Allow to check if visual composer is enable
+     */
+    private static function checkIfVisualComposerIsEnable() {
+        
+        // Check if visual composer is enable
+        if(!\is_plugin_active('js_composer/js_composer.php')) {
+            if(!self::$errorMessageAlreadyPrint) {
+                add_action( 'admin_notices', function() {
+                    echo '<div class="notice error"><p>You have enable the RootPress service "VisualComposerService" but you haven\'t enable the plugin "Visual Composer". Please enable the plugin or disable this service.</p></div>'; 
+                }); 
+                self::$errorMessageAlreadyPrint = true;
+            }
+            return false;
+        }
+        else {
+            // Everything is ok !
+            return true;
+        }
     }
 
 }

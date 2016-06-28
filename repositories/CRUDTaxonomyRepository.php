@@ -3,6 +3,7 @@
 namespace Rootpress\repositories;
 
 use Rootpress\utils\Hydratator;
+use WP_Term;
 
 /**
  * CRUDTaxonomyRepository
@@ -14,6 +15,50 @@ class CRUDTaxonomyRepository {
 
     //Repository parameters
     public static $fields = [];
+    public static $depth = 2;
+    public static $instances;
+
+    /**
+     * Get class instance
+     * $instances is an array which contains each instanced child class
+     * @param $neededFields array of fields to set as settings
+     * @param $neededDepth int depth to set as settings
+     */
+    public static function getInstance($neededFields = null, $neededDepth = null)
+    {
+        $childClass = get_called_class();
+
+        if(!isset(self::$instances[$childClass])){
+            self::$instances[$childClass] = new $childClass;
+        }
+
+        // Set field if user ask for it
+        if(!is_null($neededFields)) {
+            if(is_string($neededFields)) {
+                static::$fields = (isset(static::$$neededFields)) ? static::$$neededFields : [];
+            }
+            else if(is_array($neededFields)) {
+                static::$fields = $neededFields;
+            }
+        }
+        // Set depth if user ask for it
+        if(!is_null($neededDepth)) {
+            static::$depth = $neededDepth;
+        }
+
+        return self::$instances[$childClass];
+    }
+
+    /**
+     * Find one term by id
+     * @param $termId int
+     * @return WP_Term
+     */
+    public function findOne($termId)
+    {
+        $term = get_term($termId, static::$associate_post_type);
+        return Hydratator::hydrate($term, static::$fields, static::$depth);
+    }
 
     /**
      * Find All terms and hydrate them
@@ -24,9 +69,9 @@ class CRUDTaxonomyRepository {
         $terms = get_terms(static::$associate_post_type, ['hide_empty' => false]);
 
         //Hydrate them all
-        $terms = Hydratator::hydrates($terms, self::$fields);
+        $terms = Hydratator::hydrates($terms, static::$fields, static::$depth);
 
-        return $rubrics;
+        return $terms;
     }
 
     /**

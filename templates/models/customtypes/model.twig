@@ -1,0 +1,63 @@
+<?php
+{% import "rootpress-macros.twig" as m %}
+
+namespace {{ namespace }}\models\customtypes;
+
+use Rootpress\models\RootpressModel;
+
+/**
+ * {{ class_name }} model
+ */
+class {{ class_name }} extends RootpressModel {
+
+    //Declare which post_type this entity representing
+    public static $linked_post_type = '{{ posttype_name }}';
+
+    //List of params to modify the name to keep them
+    public static $paramsNameToChange = [
+        'ID'               => 'id',
+        'post_title'	   => 'title',
+        'post_date'		   => 'date',
+        'post_type'		   => 'type'
+    ];
+
+    //Order of attributes
+    public static $order_attributes = [
+        'id', 'title', 'date', 'type'
+    ];
+
+    /**
+     * Declare Post Type to Wordpress
+     */
+    public static function customTypeDeclaration() {
+        $args = [
+{% if labels %}
+            'labels' => [
+{% endif %}
+{% for key, label in labels %}
+{% if label %}
+                '{{ key }}' => {{ m.translate(label, text_domain, translate) }},
+{% endif %}
+{% endfor %}
+{% if labels %}
+            ],
+{% endif %}
+{% if description %}
+            'description'   => {{ m.translate(description, text_domain, translate) }},
+{% endif %}
+            'supports'      => [],
+            'taxonomies'    => [],
+            'public'        => true,
+            'menu_icon'     => '{{ menu_icon }}'
+        ];
+        register_post_type(self::$linked_post_type, $args);
+    }
+
+    /**
+     * Construct function to change some params after hydratation
+     */
+    public function construct() {
+
+    }
+
+}

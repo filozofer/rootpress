@@ -1,0 +1,48 @@
+{% raw %}
+{# Main Layout: layout.twig #}
+
+<!DOCTYPE html>
+<html>
+    {# Head block #}
+    <head>
+        <title> </title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+        <!--[if !IE]><!-->
+        <script>
+            if (/*@cc_on!@*/false && document.documentMode === 10) {
+                document.documentElement.className+=' ie10';
+            }
+        </script>
+        <!--<![endif]-->
+
+        {% block head %}
+            {{ function('wp_head') }}
+        {% endblock %}
+
+    </head>
+
+    {# Body Start #}
+    <body>
+
+        {# Header block #}
+        {% block header %}
+            {{ function('get_header') }}
+        {% endblock %}
+
+        {# Main Content block #}
+        {% block content %}
+        {% endblock %}
+
+        {# Footer block #}
+        {% block footer %}
+            {{ function('wp_footer') }}
+            {{ function('get_footer') }}
+        {% endblock %}
+
+    </body>
+</html>
+{% endraw %}
+

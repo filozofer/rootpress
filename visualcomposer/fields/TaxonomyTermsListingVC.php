@@ -5,21 +5,20 @@ namespace Rootpress\visualcomposer\fields;
 /** 
  * Relation Field for Visual Composer
  */
-class PageListingVC {
+class TaxonomyTermsListingVC {
 
     //Name of the field type
-    public static $fieldName = 'Page Listing';
+    public static $fieldName = "Articles d'une catégorie";
     //Name use for declare the field which is the name of the shortcode
-    public static $shortcodeName = 'vc_page_listing';
+    public static $shortcodeName = 'vc_taxonomy_term_listing';
     //Empty value
     public static $emptyValue = "Aucune";
     //Query params
+    public static $defaultCategory = "category";
     public static $queryParams = [
-        'posts_per_page'   => -1,
-        'post_status'      => 'publish',
-        'post_type'        => 'page',
-        'order'            => 'ASC',
-        'orderby'          => 'post_title'
+        'orderby'         => 'name',
+        'order'           => 'ASC',
+        'hide_empty'      => 1,
     ];
 
     //Shall we use options groups or not
@@ -50,6 +49,7 @@ class PageListingVC {
     public static function printSimpleField($uniqid, $paramNameEsc, $valueEsc, $classString){
         //Possible values
         $items = static::getValues();
+
         //Print the field
         echo '<div class="relation_field_block ' . $uniqid . '">' .
                 '<select name="' . $paramNameEsc . '" class="' . $classString . '" style="width: 100%;">';
@@ -72,6 +72,7 @@ class PageListingVC {
     }
 
     public static function getValues() {
-        return get_posts(static::$queryParams);
+        return get_terms(static::$defaultCategory, static::$queryParams);
+        //return get_posts(static::$queryParams);
     }
 }
