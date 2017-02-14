@@ -48,4 +48,16 @@ abstract class RootpressModel  {
 	 */
 	public function __get($name){ $this->get($name); }
 	public function __set($name, $value){ $this->set($name, $value); }
+
+	/**
+	 * Return the ACF => OBjectAttribute mapping
+	 * Array is format this way : [ACF name => [ACF key => typeAttribute]]
+	 *
+	 * @return array
+	 */
+	public function getAttributeMapping() {
+		return [
+			// ACF name => [ACF key => typeAttribute]
+		];
+	}
 }

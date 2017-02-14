@@ -113,11 +113,10 @@ class CRUDRepository
 	 * Create the entity
 	 *
 	 * @param RootpressModel $entity
-	 * @param array $fields the fields to persist, if we don't want to persist all fields
 	 *
 	 * @throws PersistenseCreationFailedException thrown when the insertion failed
 	 */
-	public function persist( RootpressModel $entity, array $fields = [] ) {
+	public function persist( RootpressModel $entity ) {
 
 		// Wordpress Post fields
 		$wpPostFields = [
@@ -172,7 +171,7 @@ class CRUDRepository
 		}
 		// Set the entity ID
 		$entity->set('ID', $postId);
-		$this->persistACF( $entity, $fields );
+		$this->persistACF( $entity );
 	}
 
 	/**
@@ -180,18 +179,17 @@ class CRUDRepository
 	 * The method getAttributeMapping is mandatory to work
 	 *
 	 * @param RootpressModel $entity
-	 * @param array $fields the fields to persist, if we don't want to persist all fields
 	 */
-    public function persistACF( RootpressModel $entity, array $fields = [] )
+    public function persistACF( RootpressModel $entity )
     {
-    	if(!empty($fields)){
-		    foreach ($fields as $acfId => $attr){
-			    update_field($acfId, $entity->get($attr), $entity->get('ID'));
-		    }
-	    }
-    	else if(method_exists($entity, 'getAttributeMapping')){
-    		foreach ($entity->getAttributeMapping() as $acfId => $attr){
-    			update_field($acfId, $entity->get($attr), $entity->get('ID'));
+    	if(!empty(self::$fields['fields'])){
+    		$attributeMap = $entity->getAttributeMapping();
+    		foreach(self::$fields['fields'] as $acfName){
+			    if(array_key_exists($acfName, $attributeMap)){
+			    	$fieldId = key($attributeMap[$acfName]);
+				    $attr = $attributeMap[$acfName][$fieldId];
+				    update_field($fieldId, $entity->get($attr), $entity->get('ID'));
+			    }
 		    }
 	    }
     }
