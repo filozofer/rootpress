@@ -1,0 +1,14 @@
+{
+  "name": "filozofer/rootpress",
+  "type": "wordpress-plugin",
+  "description": "Rootpress is a Wordpress Skeleton helper to start building wordpress custom site using an MVC-like pattern.",
+  "keywords": ["wordpress"],
+  "homepage": "https://github.com/filozofer/rootpress",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Tual Maxime",
+      "email": "maxime.tual@gmail.com"
+    }
+  ]
+}
