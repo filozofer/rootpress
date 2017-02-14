@@ -32,7 +32,7 @@ class FileUtils {
 	 */
     public static function formatFileName($fileName){
 	    $explodedFileName = explode('.', $fileName);
-	    $explodedFileName[0] .= '_' . date('Y_m_d_H_m_s');
+	    $explodedFileName[0] .= '_' . date('Y_m_d_H_i_s');
 	    return implode('.', $explodedFileName);
     }
 }
