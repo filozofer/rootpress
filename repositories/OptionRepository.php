@@ -12,6 +12,8 @@ class OptionRepository {
 
     /**
      * Get class instance
+     *
+     * @return OptionRepository
      */
     public static function getInstance()
     {

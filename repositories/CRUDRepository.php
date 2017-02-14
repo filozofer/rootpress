@@ -2,6 +2,8 @@
 
 namespace Rootpress\repositories;
 
+use rootpress\exception\CRUD\PersistenseCreationFailedException;
+use Rootpress\models\RootpressModel;
 use Rootpress\utils\Hydratator;
 
 /**
@@ -48,10 +50,13 @@ class CRUDRepository
         return self::$instances[$childClass];
     }
 
-    /**
-     * Find one post with id
-     * @param $postId int id of post to retrieve
-     */
+	/**
+	 * Find one post with id
+	 *
+	 * @param $postId int id of post to retrieve
+	 *
+	 * @return mixed
+	 */
     public function findOne($postId)
     {
         $post = get_post($postId);
@@ -91,32 +96,104 @@ class CRUDRepository
         throw new Exception("TODO: findBy function", 1);
     }
 
-    /**
-     * Function use to delete post
-     * @param postId int Id of the post to delete
-     * @param $trash boolean if false, do not send post to trash, delete it for ever
-     */
+	/**
+	 * Function use to delete post
+	 *
+	 * @param int $postId Id of the post to delete
+	 * @param boolean $trash if false, do not send post to trash, delete it for ever
+	 *
+	 * @return array|false|\WP_Post
+	 */
     public function remove($postId, $trash = true)
     {
-        return wp_delete_post($postid, !$trash);
+        return wp_delete_post($postId, !$trash);
     }
 
-    /**
-     * Function use to create post
-     * @param postId int Id of the post to delete
-     * @param $trash boolean if false, do not send post to trash, delete it for ever
-     */
-    public function create($postId, $trash = true)
-    {
-        throw new Exception("TODO: create function", 1);
-    }
+	/**
+	 * Create the entity
+	 *
+	 * @param RootpressModel $entity
+	 * @param array $fields the fields to persist, if we don't want to persist all fields
+	 *
+	 * @throws PersistenseCreationFailedException thrown when the insertion failed
+	 */
+	public function persist( RootpressModel $entity, array $fields = [] ) {
 
-    /**
-     * Function use to update multiple fields of a post
-     */
-    public function update()
+		// Wordpress Post fields
+		$wpPostFields = [
+			'ID',
+			'post_author',
+			'post_content',
+			'post_content_filtered',
+			'post_title',
+			'post_excerpt',
+			'post_status',
+			'post_type',
+			'comment_status',
+			'ping_status',
+			'post_password',
+			'post_name',
+			'to_ping',
+			'pinged',
+			'post_parent',
+			'menu_order',
+			'post_mime_type',
+			'guid',
+			'post_category',
+			'tax_input',
+			'meta_input',
+		];
+
+		// Post fields default values
+		$data         = [
+			'comment_status' => 'closed',
+			'ping_status'    => 'closed',
+			'post_status'    => 'publish',
+		];
+
+		// Browse Wordpress post fields and add fields that are set in the object's constants
+		foreach ( $wpPostFields as $field ) {
+			if ( isset( $entity->$field ) ) {
+				$data[ $field ] = $entity->get($field);
+			}
+		}
+
+		// If the getPostTitle method exists, define the post_title field with the returned value
+		if(method_exists( $entity, 'getPostTitle')){
+			$data['post_title'] = $entity->getPostTitle();
+		}
+
+		// Create the post
+		$postId = wp_insert_post( $data );
+
+		// If the post id is not an integer, the insertion failed, so throw an error
+		if(!is_integer($postId)){
+			throw new PersistenseCreationFailedException();
+		}
+		// Set the entity ID
+		$entity->set('ID', $postId);
+		$this->persistACF( $entity, $fields );
+	}
+
+	/**
+	 * Function use to persist the ACF of a post
+	 * The method getAttributeMapping is mandatory to work
+	 *
+	 * @param RootpressModel $entity
+	 * @param array $fields the fields to persist, if we don't want to persist all fields
+	 */
+    public function persistACF( RootpressModel $entity, array $fields = [] )
     {
-        throw new Exception("TODO: update function", 1);
+    	if(!empty($fields)){
+		    foreach ($fields as $acfId => $attr){
+			    update_field($acfId, $entity->get($attr), $entity->get('ID'));
+		    }
+	    }
+    	else if(method_exists($entity, 'getAttributeMapping')){
+    		foreach ($entity->getAttributeMapping() as $acfId => $attr){
+    			update_field($acfId, $entity->get($attr), $entity->get('ID'));
+		    }
+	    }
     }
 
     /**
