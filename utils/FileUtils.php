@@ -14,7 +14,7 @@ class FileUtils {
      * @return string
      */
     public static function getFileSize($filepath){
-        if(!file_exists($filepath)) {
+	    if(!file_exists($filepath) || filesize($filepath) == 0) {
             return '0 Mo';
         }
         $bytes = filesize($filepath);
