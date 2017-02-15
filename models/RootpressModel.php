@@ -7,8 +7,9 @@ use rootpress\exception\CRUD\BuildEntityException;
  * Rootpress Model for transversal function to models
  * This abstract model can be use as template for your own abstract parent model
  */
-abstract class RootpressModel  {
+abstract class RootpressModel implements RootpressModelInterface {
 
+    /** @var $ID int */
 	public $ID = 0;
 
 	/**
