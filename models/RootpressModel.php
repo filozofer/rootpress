@@ -1,6 +1,7 @@
 <?php
 
 namespace Rootpress\models;
+use rootpress\exception\CRUD\BuildEntityException;
 
 /**
  * Rootpress Model for transversal function to models
@@ -16,6 +17,35 @@ abstract class RootpressModel  {
 	 */
 	public function construct() {
 	}
+
+    /**
+     * Build object from array of data
+     * @param array $data
+     * @throws BuildEntityException
+     */
+    public function build(array $data){
+
+        // Set all the field from $data
+        foreach ($data as $fieldName => $fieldValue) {
+            $this->set($fieldName, $fieldValue);
+        }
+
+        // Set post title if method buildPostTitle exist
+        if(method_exists($this, 'buildPostTitle')) {
+            $this->post_title = $this->buildPostTitle();
+        }
+
+        // Verify if mandatory field are
+        if(method_exists($this, 'getMandatoryFields')) {
+            $mandatoryFields = $this->getMandatoryFields();
+            foreach ($mandatoryFields as $field) {
+                if(is_null($this->get($field))) {
+                    throw new BuildEntityException('Build entity ' . $this->post_title . ' failed. The mandatory field ' . $field . ' was not set.');
+                }
+            }
+        }
+
+    }
 
 	/**
 	 * Generic getter
@@ -48,16 +78,4 @@ abstract class RootpressModel  {
 	 */
 	public function __get($name){ $this->get($name); }
 	public function __set($name, $value){ $this->set($name, $value); }
-
-	/**
-	 * Return the ACF => OBjectAttribute mapping
-	 * Array is format this way : [ACF name => [ACF key => typeAttribute]]
-	 *
-	 * @return array
-	 */
-	public function getAttributeMapping() {
-		return [
-			// ACF name => [ACF key => typeAttribute]
-		];
-	}
 }
