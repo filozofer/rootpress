@@ -11,6 +11,16 @@ abstract class RootpressModel implements RootpressModelInterface {
 
     /** @var $ID int */
 	public $ID = 0;
+	public $post_type = '';
+	public static $linked_post_type = '';
+
+	/**
+	 * RootpressModel constructor
+	 * Set the post_type of the model
+	 */
+	public function __construct() {
+		$this->post_type = static::$linked_post_type;
+	}
 
 	/**
 	 * Constructor for this model
