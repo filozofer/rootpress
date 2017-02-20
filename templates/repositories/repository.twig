@@ -21,6 +21,16 @@ class {{ class_name }} extends CRUDRepository
         'taxonomies' => []
     ];
 
+    /**
+     * @param array $neededFields
+     * @param integer $neededDepth
+     *
+     * @return {{ class_name }}
+     */
+    public static function getInstance( $neededFields = null, $neededDepth = null ) {
+        return parent::getInstance( $neededFields, $neededDepth );
+    }
+
 {% if example %}
     /**
      * Retrieve list of x last examples
