@@ -1,6 +1,6 @@
 <?php
 
-namespace rootpress\exception;
+namespace Rootpress\exception;
 
 use Exception;
 

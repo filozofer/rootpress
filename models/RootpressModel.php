@@ -1,7 +1,7 @@
 <?php
 
 namespace Rootpress\models;
-use rootpress\exception\CRUD\BuildEntityException;
+use Rootpress\exception\CRUD\BuildEntityException;
 
 /**
  * Rootpress Model for transversal function to models

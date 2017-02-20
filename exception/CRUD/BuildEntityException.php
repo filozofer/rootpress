@@ -1,8 +1,8 @@
 <?php
 
-namespace rootpress\exception\CRUD;
+namespace Rootpress\exception\CRUD;
 
-use rootpress\exception\CRUDException;
+use Rootpress\exception\CRUDException;
 
 /**
  * Class BuildEntityException

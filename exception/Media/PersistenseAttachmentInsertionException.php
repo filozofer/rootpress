@@ -1,8 +1,8 @@
 <?php
 
-namespace rootpress\exception\Media;
+namespace Rootpress\exception\Media;
 
-use rootpress\exception\MediaException;
+use Rootpress\exception\MediaException;
 
 class PersistenseAttachmentInsertionException extends MediaException {
 	public function __construct() {

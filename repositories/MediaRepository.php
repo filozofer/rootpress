@@ -1,10 +1,10 @@
 <?php
 
 namespace Rootpress\repositories;
-use rootpress\exception\Media\PersistenseAttachmentInsertionException;
-use rootpress\exception\Media\PersistenseChmodAttachmentFailedException;
-use rootpress\exception\Media\PersistenseMediaException;
-use rootpress\exception\Media\PersistenseUploadAttachmentFailedException;
+use Rootpress\exception\Media\PersistenseAttachmentInsertionException;
+use Rootpress\exception\Media\PersistenseChmodAttachmentFailedException;
+use Rootpress\exception\Media\PersistenseMediaException;
+use Rootpress\exception\Media\PersistenseUploadAttachmentFailedException;
 use Rootpress\utils\FileUtils;
 use Valitron\Validator;
 

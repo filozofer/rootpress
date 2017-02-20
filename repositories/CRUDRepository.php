@@ -2,7 +2,7 @@
 
 namespace Rootpress\repositories;
 
-use rootpress\exception\CRUD\PersistenseCreationFailedException;
+use Rootpress\exception\CRUD\PersistenseCreationFailedException;
 use Rootpress\models\RootpressModel;
 use Rootpress\utils\Hydratator;
 
