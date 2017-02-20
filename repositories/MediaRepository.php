@@ -79,7 +79,7 @@ class MediaRepository {
 	/**
 	 * Persist a media file
 	 *
-	 * @param $media
+	 * @param array|string $media
 	 * @param $uploadDir
 	 *
 	 * @return int
@@ -87,9 +87,15 @@ class MediaRepository {
 	 */
 	public function persist( $media, $uploadDir = null ) {
 		$media_id = false;
-		// Detect what kind of media we have
-		if($this->mediaIsAttachment($media)){
-			$media_id = $this->persistAttachment($media, $uploadDir);
+
+		// Detect what kind of media we have (case: media upload via form)
+		if($this->mediaIsFormAttachment($media)){
+			$media_id = $this->persistFormAttachment($media, $uploadDir);
+		}
+
+		// Detect what kind of media we have (case: string)
+		if(is_string($media)) {
+			$media_id = $this->persistPathAttachment($media);
 		}
 
 		if(!is_integer($media_id) || $media_id === 0){
@@ -104,7 +110,7 @@ class MediaRepository {
 	 *
 	 * @return bool
 	 */
-	private function mediaIsAttachment( $media ){
+	private function mediaIsFormAttachment( $media ){
 		$result = false;
 		if(is_array($media)){
 			$v = new Validator($media);
@@ -127,7 +133,8 @@ class MediaRepository {
 	 * @throws PersistenseChmodAttachmentFailedException
 	 * @throws PersistenseUploadAttachmentFailedException
 	 */
-	private function persistAttachment(array $media, $uploadDir = null){
+	private function persistFormAttachment(array $media, $uploadDir = null) {
+
 		// Get path to upload directory
 		$path = is_null($uploadDir) ? wp_upload_dir()['path'] . '/' : $uploadDir;
 
@@ -166,4 +173,35 @@ class MediaRepository {
 		// Return the attachment id
 		return $attachmentId;
 	}
+
+	/**
+	 * Persist an attachment file from $_FILES in WP database
+	 *
+	 * @param string $fullPath
+	 *
+	 * @return int
+	 * @throws PersistenseAttachmentInsertionException
+	 */
+	private function persistPathAttachment($fullPath) {
+
+		// Create the WP attachment array
+		$attachment = [
+			'guid'              => $fullPath,
+			'post_title'        => basename($fullPath),
+			'post_content'      => '',
+			'post_status'       => 'private',
+			'post_mime_type'    => finfo_file(finfo_open(FILEINFO_MIME_TYPE), $fullPath),
+			'post_size'         => FileUtils::getFileSize($fullPath),
+		];
+
+		// Try to insert the new attachment
+		$attachmentId = wp_insert_attachment($attachment, $fullPath);
+		if(!is_integer($attachmentId) || $attachmentId === 0){
+			throw new PersistenseAttachmentInsertionException();
+		}
+
+		// Return the attachment id
+		return $attachmentId;
+	}
+
 }
