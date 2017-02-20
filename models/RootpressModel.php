@@ -63,7 +63,7 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 * Prefer using this to access your attribute
 	 */
 	public function get($paramName) {
-		$getter = 'get' . ucwords($paramName);
+		$getter = 'get' . str_replace(' ', '', ucwords(str_replace('_', ' ', $paramName)));
 		if(method_exists($this, $getter)) {
 			return $this->$getter();
 		}
@@ -75,7 +75,7 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 * Prefer using this to change value of your attribute
 	 */
 	public function set($paramName, $value) {
-		$setter = 'set' . ucwords($paramName);
+		$setter = 'set' . str_replace(' ', '', ucwords(str_replace('_', ' ', $paramName)));
 		if(method_exists($this, $setter)) {
 			return $this->$setter($value);
 		}
