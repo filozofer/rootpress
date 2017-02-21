@@ -99,13 +99,14 @@ class CRUDRepository
 	/**
 	 * Function use to delete post
 	 *
-	 * @param int $postId Id of the post to delete
+	 * @param RootpressModel|int $post Instance or object id of the post to delete
 	 * @param boolean $trash if false, do not send post to trash, delete it for ever
 	 *
 	 * @return array|false|\WP_Post
 	 */
-    public function remove($postId, $trash = true)
+    public function remove($post, $trash = true)
     {
+    	$postId = (is_object($post)) ? $post->ID : $post;
         return wp_delete_post($postId, !$trash);
     }
 
