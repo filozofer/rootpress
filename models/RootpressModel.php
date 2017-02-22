@@ -89,4 +89,27 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 */
 	public function __get($name){ $this->get($name); }
 	public function __set($name, $value){ $this->set($name, $value); }
+
+	/**
+	 * Get ACF field key from field name
+	 * @param $fieldName
+	 * @return string
+	 * @throws \Exception
+	 */
+	public function getAcfFieldKeyFromName($fieldName) {
+
+		// Method exist ?
+		if(!method_exists($this, 'getAttributeMapping')) {
+			throw new \Exception('You must implement getAttributeMapping in your model class before using this function.');
+		}
+
+		// Find field and return it
+		$fields = $this->getAttributeMapping();
+		if(!isset($fields[$fieldName])) {
+			throw new \Exception('Field not found in getAttributeMapping. Cannot retrieve associate field key.');
+		}
+		return key($fields[$fieldName]);
+
+	}
+
 }

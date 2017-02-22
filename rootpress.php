@@ -51,6 +51,9 @@ class Rootpress
         add_action('init', ['Rootpress\Rootpress', 'modelsSystem'], 99);
         add_filter('rootpress_before_hydrate', ['Rootpress\Rootpress', 'getEntityFromWPPost'], 99);
 
+	    // Load migrations
+	    self::loadMigrations();
+
         // Launch Rootpress Services according to rootpress configuration
         self::loadServices();
 
@@ -252,6 +255,26 @@ class Rootpress
         });
         
     }
+
+	/**
+	 * Load migrations declare in options file and theme
+	 */
+	public static function loadMigrations() {
+
+		// Get list of migration folders
+		$migrationsDefaultFolderPaths = [
+			get_stylesheet_directory() . '/migrations' => self::getCurrentThemeNamespace() . '\migrations'
+		];
+
+		//Load all migrations class and then allow them to declare them self
+		self::loadFilesFromPaths('controller', $migrationsDefaultFolderPaths, function($classPath){
+			// Call declareMigration method for each migration class
+			if(method_exists($classPath, 'declareMigration')) {
+				$classPath::declareMigration();
+			}
+		});
+
+	}
 
     /**
      * Get Rootpress dir path

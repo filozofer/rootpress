@@ -110,6 +110,62 @@ class WPCLIService extends WP_CLI_Command {
 
     }
 
+	/**
+	 * Migration system
+	 *
+	 * ## OPTIONS
+	 *
+	 * <command>
+	 * : Which sub-command to launch
+	 * ---
+	 * options:
+	 *   - generate
+	 *   - status
+	 *   - version
+	 *   - migrate
+	 *   - execute
+	 * ---
+	 *
+	 *   :diff     Generate a migration by comparing your current database to your mapping information.
+	 *   :execute  Execute a single migration version up or down manually.
+	 *   :generate Generate a blank migration class.
+	 *   :migrate  Execute a migration to a specified version or the latest available version.
+	 *   :status   View the status of a set of migrations.
+	 *   :version  Manually add and delete migration versions from the version table.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp rootpress migrations generate
+	 *     wp rootpress migrations status
+	 *     wp rootpress migrations version
+	 *     wp rootpress migrations migrate
+	 *     wp rootpress migrations execute 1000
+	 *     wp rootpress migrations execute 1000 --down
+	 *
+	 */
+    public function migrations($args, $assoc_args) {
+
+	    /**
+	     * This is the enter point for migrations command
+	     */
+	    switch($args[0]) {
+
+		    // Generate theme
+		    case 'migrate': $this->migrationsMigrate($args, $assoc_args); break;
+
+		    // Not implemented yet
+			case 'generate':
+			case 'status':
+			case 'version':
+			case 'execute':
+			    throw new \Exception('Not implemented yet');
+
+		    // Cannot happen
+		    default:
+	    }
+
+    }
+
     /**
      * Generate a new basic theme with skeleton
      * @command wp rootpress generate theme
@@ -660,6 +716,49 @@ class WPCLIService extends WP_CLI_Command {
             Timber::$locations = (!is_array(Timber::$locations)) ? [] : Timber::$locations;
             Timber::$locations[] = dirname(plugin_dir_path(__FILE__)) . '/templates';
         }
+    }
+
+	/**
+	 * Launch the migrations process
+	 */
+    public static function migrationsMigrate(){
+
+	    // Get all declare rootpress migrations
+	    global $wp_filter;
+	    $migrationsActions = array_keys(array_filter($wp_filter, function($value, $hook_key){
+		    return strpos($hook_key, 'rootpress_migrations') !== false;
+	    }, ARRAY_FILTER_USE_BOTH));
+	    $migrations = [];
+	    foreach($migrationsActions as $migration) {
+		    $explodeName = explode('_', $migration);
+		    $migrationNumber = (int) end($explodeName);
+		    $migrations[$migrationNumber] = $migration;
+	    }
+
+	    // Find actual migrations number
+	    $actualMigrationVersion = get_option('rootpress_migrations', 0);
+
+	    // Search for the migrations we have not pass yet
+	    $migrationsToLaunch = [];
+	    foreach ($migrations as $migrationNumber => $migration) {
+		    if($migrationNumber > $actualMigrationVersion) {
+			    $migrationsToLaunch[$migrationNumber] = $migration;
+		    }
+	    }
+
+	    // Ask for user commitment
+	    WP_CLI::line('The following migrations will be executed:');
+	    foreach ($migrationsToLaunch as $migrationNumber => $migration) {
+		    WP_CLI::line('* ' . $migrationNumber);
+	    }
+	    WPCLIService::askForUserCommit('Are you sure to execute these migrations ?', true, true);
+
+		// Launch all the migrations we have not pass yet
+	    foreach ($migrationsToLaunch as $migrationNumber => $migration) {
+		    do_action($migration, 'up');
+		    update_option('rootpress_migrations', $migrationNumber);
+	    }
+
     }
 
 }
