@@ -28,6 +28,21 @@ abstract class RootpressMigration implements RootpressMigrationInterface {
 
 		// Declare the migration
 		add_action('rootpress_migrations_' . $migration->getMigrationNumber(), [$migration, 'migrate']);
+		add_filter('rootpress_migrations_list', function($list) use ($migration) {
+
+			// Handle collision
+			if(isset($list[$migration->getMigrationNumber()])) {
+				$errorMessage = 'Migration version number collision.';
+				$errorMessage .= 'Migration ' . $migration->getMigrationNumber() . 'has multiple implementation name : ';
+				$errorMessage .= $list[$migration->getMigrationNumber()] . ' and ' . $migration->getMigrationName();
+				throw new \Exception($errorMessage);
+			}
+
+			// Add migration name to the list and return it to continue the filter
+			$list[$migration->getMigrationNumber()] = $migration->getMigrationNumber() . ' : ' . $migration->getMigrationName();
+			return $list;
+
+		});
 
 	}
 

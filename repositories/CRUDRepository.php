@@ -5,6 +5,7 @@ namespace Rootpress\repositories;
 use Rootpress\exception\CRUD\PersistenseCreationFailedException;
 use Rootpress\models\RootpressModel;
 use Rootpress\utils\Hydratator;
+use WP_Query;
 
 /**
  * CRUDRepository
@@ -68,12 +69,14 @@ class CRUDRepository
      */
     public function findAll()
     {
-        //Magazines
-        $posts = get_posts([
-            'post_type' => static::$associate_post_type,
-            'post_status' => 'publish',
-            'suppress_filters' => false
+        // Get all posts
+        $posts = new WP_Query([
+            'post_type'         => static::$associate_post_type,
+            'post_status'       => 'publish',
+            'suppress_filters'  => false,
+	        'posts_per_page'    => -1
         ]);
+	    $posts = $posts->get_posts();
 
         //Hydrate them
         return Hydratator::hydrates($posts, static::$fields, static::$depth);

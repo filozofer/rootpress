@@ -126,6 +126,9 @@ class WPCLIService extends WP_CLI_Command {
 	 *   - execute
 	 * ---
 	 *
+	 * [--set=<version>]
+	 * : Allow to choose the version to set
+	 *
 	 *   :diff     Generate a migration by comparing your current database to your mapping information.
 	 *   :execute  Execute a single migration version up or down manually.
 	 *   :generate Generate a blank migration class.
@@ -153,10 +156,12 @@ class WPCLIService extends WP_CLI_Command {
 		    // Generate theme
 		    case 'migrate': $this->migrationsMigrate($args, $assoc_args); break;
 
+		    // Version manager
+		    case 'version': $this->migrationsVersion($args, $assoc_args); break;
+
 		    // Not implemented yet
 			case 'generate':
 			case 'status':
-			case 'version':
 			case 'execute':
 			    throw new \Exception('Not implemented yet');
 
@@ -740,25 +745,61 @@ class WPCLIService extends WP_CLI_Command {
 
 	    // Search for the migrations we have not pass yet
 	    $migrationsToLaunch = [];
+	    $allDeclareMigrations = apply_filters('rootpress_migrations_list', []);
+	    $migrationsNameToLaunch = [];
 	    foreach ($migrations as $migrationNumber => $migration) {
 		    if($migrationNumber > $actualMigrationVersion) {
 			    $migrationsToLaunch[$migrationNumber] = $migration;
+			    $migrationsNameToLaunch[] = '* ' . $allDeclareMigrations[$migrationNumber];
 		    }
 	    }
 
-	    // Ask for user commitment
-	    WP_CLI::line('The following migrations will be executed:');
-	    foreach ($migrationsToLaunch as $migrationNumber => $migration) {
-		    WP_CLI::line('* ' . $migrationNumber);
+	    // Only continue if there is something to update else print the list
+	    if(empty($migrationsToLaunch)) {
+	    	WP_CLI::success('Nothing to migrate. Exit command');
+		    exit();
 	    }
+
+	    // Display list
+	    WP_CLI::line('The following migrations will be executed:');
+	    foreach ($migrationsNameToLaunch as $migrationName) {
+		    WP_CLI::line($migrationName);
+	    }
+
+	    // User commitment
 	    WPCLIService::askForUserCommit('Are you sure to execute these migrations ?', true, true);
 
 		// Launch all the migrations we have not pass yet
 	    foreach ($migrationsToLaunch as $migrationNumber => $migration) {
 		    do_action($migration, 'up');
+		    WP_CLI::success('Migration number ' . $migrationNumber . ' done');
 		    update_option('rootpress_migrations', $migrationNumber);
 	    }
 
+	    // Success !
+	    WP_CLI::success('You are now at the migration version number: ' . get_option('rootpress_migrations', 0));
+
     }
+
+	/**
+	 * Manage Migration Version
+	 *
+	 * @param array $args
+	 * @param array $assoc_args
+	 */
+	public static function migrationsVersion($args, $assoc_args) {
+
+		// Print actual version
+		$actualMigrationVersion = get_option('rootpress_migrations', 0);
+		WP_CLI::line('Actual migration version number is ' . $actualMigrationVersion);
+
+		// Ask wanted version
+		$versionToSet = (isset($assoc_args['set'])) ? (int) $assoc_args['set'] : WPCLIService::askToUser('Migration version number to set ?');
+
+		// Update migration version number
+		update_option('rootpress_migrations', (int) $versionToSet);
+		WP_CLI::success('Actual migration version number is now ' . ((int) $versionToSet));
+
+	}
 
 }
