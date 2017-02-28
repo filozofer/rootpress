@@ -10,9 +10,12 @@ use Rootpress\exception\CRUDException;
  */
 class BuildEntityException extends CRUDException {
 
-    /**
-     * BuildEntityException constructor.
-     */
+	/**
+	 * BuildEntityException constructor.
+	 *
+	 * @param string $message
+	 * @param string $code
+	 */
     public function __construct($message = null, $code = null) {
         $code = (is_null($code)) ? null : $code;
         $message = (is_null($message)) ? 'The attempt to build an entity failed.' : $message;
