@@ -50,6 +50,12 @@ abstract class RootpressModel implements RootpressModelInterface {
         if(method_exists($this, 'getMandatoryFields')) {
             $mandatoryFields = $this->getMandatoryFields();
             foreach ($mandatoryFields as $field) {
+            	$calledClass = get_called_class();
+            	if(!property_exists($calledClass, $field)){
+		            $explodedClass = explode('\\', $calledClass);
+		            $class = end($explodedClass);
+		            throw new BuildEntityException('Build entity ' . $class . ' failed. The mandatory field [' . $field . '] does not exists.');
+	            }
                 if(is_null($this->get($field))) {
                     throw new BuildEntityException('Build entity ' . $this->post_title . ' failed. The mandatory field ' . $field . ' was not set.');
                 }
