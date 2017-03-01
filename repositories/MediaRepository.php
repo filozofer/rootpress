@@ -85,17 +85,17 @@ class MediaRepository {
 	 * @return int
 	 * @throws PersistenseMediaException
 	 */
-	public function persist( $media, $uploadDir = null ) {
+	public function persist( $media, $uploadDir = null, $options = null) {
 		$media_id = false;
 
 		// Detect what kind of media we have (case: media upload via form)
 		if($this->mediaIsFormAttachment($media)){
-			$media_id = $this->persistFormAttachment($media, $uploadDir);
+			$media_id = $this->persistFormAttachment($media, $uploadDir, $options);
 		}
 
 		// Detect what kind of media we have (case: string)
 		if(is_string($media)) {
-			$media_id = $this->persistPathAttachment($media);
+			$media_id = $this->persistPathAttachment($media, $options);
 		}
 
 		if(!is_integer($media_id) || $media_id === 0){
@@ -127,13 +127,14 @@ class MediaRepository {
 	 *
 	 * @param array $media
 	 * @param string $uploadDir
+	 * @param array $options
 	 *
 	 * @return int
 	 * @throws PersistenseAttachmentInsertionException
 	 * @throws PersistenseChmodAttachmentFailedException
 	 * @throws PersistenseUploadAttachmentFailedException
 	 */
-	private function persistFormAttachment(array $media, $uploadDir = null) {
+	private function persistFormAttachment(array $media, $uploadDir = null, $options = null) {
 
 		// Get path to upload directory
 		$path = is_null($uploadDir) ? wp_upload_dir()['path'] . '/' : $uploadDir;
@@ -163,6 +164,9 @@ class MediaRepository {
 			'post_mime_type' => finfo_file(finfo_open(FILEINFO_MIME_TYPE), $fullPath),
 			'post_size' => FileUtils::getFileSize($fullPath),
 		];
+		if(!is_null($options)) {
+			$attachment = array_merge($attachment, $options);
+		}
 
 		// Try to insert the new attachment
 		$attachmentId = wp_insert_attachment($attachment, $fullPath);
@@ -178,11 +182,12 @@ class MediaRepository {
 	 * Persist an attachment file from $_FILES in WP database
 	 *
 	 * @param string $fullPath
+	 * @param array $options
 	 *
 	 * @return int
 	 * @throws PersistenseAttachmentInsertionException
 	 */
-	private function persistPathAttachment($fullPath) {
+	private function persistPathAttachment($fullPath, $options = null) {
 
 		// Create the WP attachment array
 		$attachment = [
@@ -193,6 +198,9 @@ class MediaRepository {
 			'post_mime_type'    => finfo_file(finfo_open(FILEINFO_MIME_TYPE), $fullPath),
 			'post_size'         => FileUtils::getFileSize($fullPath),
 		];
+		if(!is_null($options)) {
+			$attachment = array_merge($attachment, $options);
+		}
 
 		// Try to insert the new attachment
 		$attachmentId = wp_insert_attachment($attachment, $fullPath);
