@@ -2,8 +2,11 @@
 
 namespace Rootpress\repositories;
 
+use Rootpress\enums\ACFType;
 use Rootpress\exception\CRUD\PersistenseCreationFailedException;
 use Rootpress\models\RootpressModel;
+use Rootpress\utils\CRUDUtils;
+use Rootpress\utils\DateUtils;
 use Rootpress\utils\Hydratator;
 use WP_Query;
 
@@ -189,9 +192,16 @@ class CRUDRepository
     	if(!empty(self::$fields['fields'])){
     		$attributeMap = $entity->getAttributeMapping();
     		foreach(self::$fields['fields'] as $acfName){
-			    if(array_key_exists($acfName, $attributeMap)){
-			    	$fieldId = key($attributeMap[$acfName]);
-				    $attr = $attributeMap[$acfName][$fieldId];
+			    if(array_key_exists($acfName, $attributeMap)) {
+				    $fieldId = key( $attributeMap[ $acfName ] );
+				    $attr    = $attributeMap[ $acfName ][ $fieldId ];
+
+				    // Check if attribute has to be formatted before persist
+				    $formattedAttrValue = CRUDUtils::formatACF($attributeMap[ $acfName ], $entity->get( $attr ));
+				    if($formattedAttrValue !== $entity->get($attr)){
+				    	$entity->set($attr, $formattedAttrValue);
+				    }
+
 				    update_field($fieldId, $entity->get($attr), $entity->get('ID'));
 			    }
 		    }
