@@ -67,11 +67,18 @@ abstract class RootpressModel implements RootpressModelInterface {
 	/**
 	 * Generic getter
 	 * Prefer using this to access your attribute
+	 *
+	 * @param string $paramName
+	 *
+	 * @return mixed
 	 */
 	public function get($paramName) {
 		$getter = 'get' . str_replace(' ', '', ucwords(str_replace('_', ' ', $paramName)));
 		if(method_exists($this, $getter)) {
 			return $this->$getter();
+		}
+		if(array_key_exists($paramName, $this->getAttributeMapping())){
+			return $this->get(end($this->getAttributeMapping()[$paramName]));
 		}
 		return $this->$paramName;
 	}
@@ -79,11 +86,19 @@ abstract class RootpressModel implements RootpressModelInterface {
 	/**
 	 * Generic setter
 	 * Prefer using this to change value of your attribute
+	 *
+	 * @param string $paramName
+	 * @param mixed $value
+	 *
+	 * @return mixed
 	 */
 	public function set($paramName, $value) {
 		$setter = 'set' . str_replace(' ', '', ucwords(str_replace('_', ' ', $paramName)));
 		if(method_exists($this, $setter)) {
 			return $this->$setter($value);
+		}
+		if(array_key_exists($paramName, $this->getAttributeMapping())){
+			return $this->set(end($this->getAttributeMapping()[$paramName]), $value);
 		}
 		return $this->$paramName = $value;
 	}
@@ -93,7 +108,18 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 * If you want to respect encapsulation rules you need to declare all your object fields as private attribute inside your child class
 	 * When the hydrate process will try to hydrate your field, these magic function will call the generics getter and setter
 	 */
+
+	/**
+	 * Magic getter
+	 * @param string $name
+	 */
 	public function __get($name){ $this->get($name); }
+
+	/**
+	 * Magic setter
+	 * @param string $name
+	 * @param mixed $value
+	 */
 	public function __set($name, $value){ $this->set($name, $value); }
 
 	/**
