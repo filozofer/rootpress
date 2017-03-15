@@ -13,6 +13,8 @@
 namespace Rootpress;
 
 // Deploy the roots !
+use WP;
+
 Rootpress::deployTheRoots();
 
 /**
@@ -119,7 +121,7 @@ class Rootpress
                     if (file_exists($file)) {
 
                         // Then include the file which allow the class to be found (if class and namespace are properly declare inside that file of course)
-                        require_once $file;
+	                    require_once $file;
                         return true;
 
                     }
@@ -128,10 +130,14 @@ class Rootpress
         });
     }
 
-    /**
-     * Controllers System Init
-     * Fire an action 'controller_action_{template_filename}' just after template is selected to render a page which allow to have controller system base on template
-     */
+	/**
+	 * Controllers System Init
+	 * Fire an action 'controller_action_{template_filename}' just after template is selected to render a page which allow to have controller system base on template
+	 *
+	 * @param string $template_path
+	 *
+	 * @return mixed
+	 */
     public static function controllersSystem($template_path) {
         $template_filename = basename($template_path, '.php');
         do_action('controller_action_' . $template_filename);
@@ -194,11 +200,14 @@ class Rootpress
         });
     }
 
-    /**
-     * Transform a WP Object to an entity by using the associative array self::linkPostTypeToClass which have been populate during models declaration
-     * This method is call at the beginning of the hydrate process by Hydratator using a filter
-     * @param $object WP object to convert into model
-     */
+	/**
+	 * Transform a WP Object to an entity by using the associative array self::linkPostTypeToClass which have been populate during models declaration
+	 * This method is call at the beginning of the hydrate process by Hydratator using a filter
+	 *
+	 * @param Object $object WP object to convert into model
+	 *
+	 * @return null|WP
+	 */
     public static function getEntityFromWPPost($object) {
         $WPC = null;
 
@@ -285,9 +294,9 @@ class Rootpress
 
     /**
      * Get list of class from folders list and execute a call back on all this class
-     * @param $filterKeyword string keyword use in apply_filters of this function
-     * @param $foldersPaths array associative array [folder path => associate namespace, ...]
-     * @param $callback function callback to launch on each class
+     * @param string $filterKeyword keyword use in apply_filters of this function
+     * @param array $foldersPaths associative array [folder path => associate namespace, ...]
+     * @param callable $callback callback to launch on each class
      * @filter rootpress_[$filterKeyword]_folders_list Override the list of folders containing files to load
      * @filter rootpress_[$filterKeyword]_files_list Override the list of files to load
      * @filter rootpress_[$filterKeyword]_class_name_list Override the class name guessing method
