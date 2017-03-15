@@ -1,6 +1,8 @@
 <?php
 
 namespace Rootpress\models;
+
+use PoivreRouge\models\customtypes\Client;
 use Rootpress\exception\CRUD\BuildEntityException;
 
 /**
@@ -9,7 +11,7 @@ use Rootpress\exception\CRUD\BuildEntityException;
  */
 abstract class RootpressModel implements RootpressModelInterface {
 
-    /** @var $ID int */
+	/** @var $ID int */
 	public $ID = 0;
 	public $post_type = '';
 	public static $linked_post_type = '';
@@ -29,40 +31,40 @@ abstract class RootpressModel implements RootpressModelInterface {
 	public function construct() {
 	}
 
-    /**
-     * Build object from array of data
-     * @param array $data
-     * @throws BuildEntityException
-     */
-    public function build(array $data){
+	/**
+	 * Build object from array of data
+	 *
+	 * @param array $data
+	 *
+	 * @throws BuildEntityException
+	 */
+	public function build( array $data ) {
+		// Set all the field from $data
+		foreach ( $data as $fieldName => $fieldValue ) {
+			$this->set( $fieldName, $fieldValue );
+		}
 
-        // Set all the field from $data
-        foreach ($data as $fieldName => $fieldValue) {
-            $this->set($fieldName, $fieldValue);
-        }
+		// Set post title if method buildPostTitle exist
+		if ( method_exists( $this, 'buildPostTitle' ) ) {
+			$this->post_title = $this->buildPostTitle();
+		}
 
-        // Set post title if method buildPostTitle exist
-        if(method_exists($this, 'buildPostTitle')) {
-            $this->post_title = $this->buildPostTitle();
-        }
-
-        // Verify if mandatory field are
-        if(method_exists($this, 'getMandatoryFields')) {
-            $mandatoryFields = $this->getMandatoryFields();
-            foreach ($mandatoryFields as $field) {
-            	$calledClass = get_called_class();
-            	if(!property_exists($calledClass, $field)){
-		            $explodedClass = explode('\\', $calledClass);
-		            $class = end($explodedClass);
-		            throw new BuildEntityException('Build entity ' . $class . ' failed. The mandatory field [' . $field . '] does not exists.');
-	            }
-                if(is_null($this->get($field))) {
-                    throw new BuildEntityException('Build entity ' . $this->post_title . ' failed. The mandatory field ' . $field . ' was not set.');
-                }
-            }
-        }
-
-    }
+		// Verify if mandatory field are
+		if ( method_exists( $this, 'getMandatoryFields' ) ) {
+			$mandatoryFields = $this->getMandatoryFields();
+			foreach ( $mandatoryFields as $field ) {
+				$calledClass = get_called_class();
+				if ( ! property_exists( $calledClass, $field ) ) {
+					$explodedClass = explode( '\\', $calledClass );
+					$class         = end( $explodedClass );
+					throw new BuildEntityException( 'Build entity ' . $class . ' failed. The mandatory field [' . $field . '] does not exists.' );
+				}
+				if ( is_null( $this->get( $field ) ) ) {
+					throw new BuildEntityException( 'Build entity ' . $this->post_title . ' failed. The mandatory field ' . $field . ' was not set.' );
+				}
+			}
+		}
+	}
 
 	/**
 	 * Generic getter
@@ -72,14 +74,16 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 *
 	 * @return mixed
 	 */
-	public function get($paramName) {
-		$getter = 'get' . str_replace(' ', '', ucwords(str_replace('_', ' ', $paramName)));
-		if(method_exists($this, $getter)) {
+	public function get( $paramName ) {
+		if ( array_key_exists( $paramName, $this->getAttributeMapping() ) ) {
+			$paramName = end( $this->getAttributeMapping()[ $paramName ] );
+		}
+
+		$getter = 'get' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
+		if ( method_exists( $this, $getter ) ) {
 			return $this->$getter();
 		}
-		if(array_key_exists($paramName, $this->getAttributeMapping())){
-			return $this->get(end($this->getAttributeMapping()[$paramName]));
-		}
+
 		return $this->$paramName;
 	}
 
@@ -92,14 +96,16 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 *
 	 * @return mixed
 	 */
-	public function set($paramName, $value) {
-		$setter = 'set' . str_replace(' ', '', ucwords(str_replace('_', ' ', $paramName)));
-		if(method_exists($this, $setter)) {
-			return $this->$setter($value);
+	public function set( $paramName, $value ) {
+		if ( array_key_exists( $paramName, $this->getAttributeMapping() ) ) {
+			$paramName = end( $this->getAttributeMapping()[ $paramName ]);
 		}
-		if(array_key_exists($paramName, $this->getAttributeMapping())){
-			return $this->set(end($this->getAttributeMapping()[$paramName]), $value);
+
+		$setter = 'set' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
+		if ( method_exists( $this, $setter ) ) {
+			return $this->$setter( $value );
 		}
+
 		return $this->$paramName = $value;
 	}
 
@@ -108,39 +114,41 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 * If you want to respect encapsulation rules you need to declare all your object fields as private attribute inside your child class
 	 * When the hydrate process will try to hydrate your field, these magic function will call the generics getter and setter
 	 */
-
 	/**
 	 * Magic getter
-	 * @param string $name
+	 *
+	 * @param $name
 	 */
-	public function __get($name){ $this->get($name); }
+	public function __get( $name ) {
+		$this->get( $name );
+	}
 
-	/**
-	 * Magic setter
-	 * @param string $name
-	 * @param mixed $value
-	 */
-	public function __set($name, $value){ $this->set($name, $value); }
+	public function __set( $name, $value ) {
+		$this->set( $name, $value );
+	}
 
 	/**
 	 * Get ACF field key from field name
+	 *
 	 * @param $fieldName
+	 *
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function getAcfFieldKeyFromName($fieldName) {
+	public function getAcfFieldKeyFromName( $fieldName ) {
 
 		// Method exist ?
-		if(!method_exists($this, 'getAttributeMapping')) {
-			throw new \Exception('You must implement getAttributeMapping in your model class before using this function.');
+		if ( ! method_exists( $this, 'getAttributeMapping' ) ) {
+			throw new \Exception( 'You must implement getAttributeMapping in your model class before using this function.' );
 		}
 
 		// Find field and return it
 		$fields = $this->getAttributeMapping();
-		if(!isset($fields[$fieldName])) {
-			throw new \Exception('Field not found in getAttributeMapping. Cannot retrieve associate field key.');
+		if ( ! isset( $fields[ $fieldName ] ) ) {
+			throw new \Exception( 'Field not found in getAttributeMapping. Cannot retrieve associate field key.' );
 		}
-		return key($fields[$fieldName]);
+
+		return key( $fields[ $fieldName ] );
 
 	}
 
