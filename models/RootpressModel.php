@@ -76,7 +76,7 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 */
 	public function get( $paramName ) {
 		if ( array_key_exists( $paramName, $this->getAttributeMapping() ) ) {
-			$paramName = end( $this->getAttributeMapping()[ $paramName ] );
+			$paramName = reset( $this->getAttributeMapping()[ $paramName ] );
 		}
 
 		$getter = 'get' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
@@ -98,7 +98,7 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 */
 	public function set( $paramName, $value ) {
 		if ( array_key_exists( $paramName, $this->getAttributeMapping() ) ) {
-			$paramName = end( $this->getAttributeMapping()[ $paramName ]);
+			$paramName = reset( $this->getAttributeMapping()[ $paramName ]);
 		}
 
 		$setter = 'set' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
