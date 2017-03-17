@@ -103,6 +103,18 @@ class CRUDRepository
     }
 
 	/**
+	 * Find the id of a post by it's post title
+	 * @param string $postTitle
+	 *
+	 * @return null|string null or the post id
+	 */
+	public function findIdByTitle( $postTitle ) {
+		global $wpdb;
+		$postType = static::$associate_post_type;
+		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_type='$postType' AND post_status='publish'", $postTitle ) );
+	}
+
+	/**
 	 * Function use to delete post
 	 *
 	 * @param RootpressModel|int $post Instance or object id of the post to delete
@@ -121,6 +133,7 @@ class CRUDRepository
 	 *
 	 * @param RootpressModel $entity
 	 *
+	 * @return bool
 	 * @throws PersistenseCreationFailedException thrown when the insertion failed
 	 */
 	public function persist( RootpressModel $entity ) {
@@ -178,7 +191,7 @@ class CRUDRepository
 		}
 		// Set the entity ID
 		$entity->set('ID', $postId);
-		$this->persistACF( $entity );
+		return $this->persistACF( $entity );
 	}
 
 	/**
@@ -186,12 +199,18 @@ class CRUDRepository
 	 * The method getAttributeMapping is mandatory to work
 	 *
 	 * @param RootpressModel $entity
+	 *
+	 * @return bool
 	 */
     public function persistACF( RootpressModel $entity )
     {
-    	if(!empty(self::$fields['fields'])){
+    	$result = true;
+
+	    if(!empty(self::$fields['fields'])){
     		$attributeMap = $entity->getAttributeMapping();
-    		foreach(self::$fields['fields'] as $acfName){
+
+		    foreach(self::$fields['fields'] as $acfName){
+
 			    if(array_key_exists($acfName, $attributeMap)) {
 				    $fieldId = key( $attributeMap[ $acfName ] );
 				    $attr    = $attributeMap[ $acfName ][ $fieldId ];
@@ -202,10 +221,14 @@ class CRUDRepository
 				    	$entity->set($attr, $formattedAttrValue);
 				    }
 
-				    update_field($fieldId, $entity->get($attr), $entity->get('ID'));
+				    if(!update_field($fieldId, $entity->get($attr), $entity->get('ID'))){
+				    	$result = false;
+				    	break;
+				    }
 			    }
 		    }
 	    }
+	    return $result;
     }
 
     /**
