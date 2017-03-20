@@ -75,6 +75,7 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 * @return mixed
 	 */
 	public function get( $paramName ) {
+
 		if ( array_key_exists( $paramName, $this->getAttributeMapping() ) ) {
 			$paramName = reset( $this->getAttributeMapping()[ $paramName ] );
 		}
@@ -120,7 +121,7 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 * @param $name
 	 */
 	public function __get( $name ) {
-		$this->get( $name );
+		return $this->get( $name );
 	}
 
 	public function __set( $name, $value ) {
