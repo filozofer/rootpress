@@ -221,10 +221,7 @@ class CRUDRepository
 				    	$entity->set($attr, $formattedAttrValue);
 				    }
 
-				    if(!update_field($fieldId, $entity->get($attr), $entity->get('ID'))){
-				    	$result = false;
-				    	break;
-				    }
+				    update_field($fieldId, $entity->get($attr), $entity->get('ID'));
 			    }
 		    }
 	    }
