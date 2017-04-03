@@ -7,7 +7,7 @@ use \WP_CLI;
 use \Timber;
 
 // Only load this service when WP_CLI is loaded
-if(!class_exists('WP_CLI')) {
+if(!class_exists('WP_CLI') || !class_exists('WP_CLI_Command')) {
     return;
 }
 
@@ -129,6 +129,9 @@ class WPCLIService extends WP_CLI_Command {
 	 * [--set=<version>]
 	 * : Allow to choose the version to set
 	 *
+	 * [--version=<version>]
+	 * : Allow to choose the version to set
+	 *
 	 *   :diff     Generate a migration by comparing your current database to your mapping information.
 	 *   :execute  Execute a single migration version up or down manually.
 	 *   :generate Generate a blank migration class.
@@ -159,10 +162,12 @@ class WPCLIService extends WP_CLI_Command {
 		    // Version manager
 		    case 'version': $this->migrationsVersion($args, $assoc_args); break;
 
+		    // Execute specific version
+		    case 'execute': $this->migrationsExecute($args, $assoc_args); break;
+
 		    // Not implemented yet
 			case 'generate':
 			case 'status':
-			case 'execute':
 			    throw new \Exception('Not implemented yet');
 
 		    // Cannot happen
@@ -238,7 +243,6 @@ class WPCLIService extends WP_CLI_Command {
         // Success !
         WP_CLI::success('Your new theme has been generated !');
     }
-
 
     /**
      * Generate SASS basic architecture
@@ -780,6 +784,44 @@ class WPCLIService extends WP_CLI_Command {
 	    WP_CLI::success('You are now at the migration version number: ' . get_option('rootpress_migrations', 0));
 
     }
+
+	/**
+	 * Execute a specific migrations
+	 */
+	public static function migrationsExecute($args, $assoc_args){
+
+		// Get all declare rootpress migrations
+		global $wp_filter;
+		$migrationsActions = array_keys(array_filter($wp_filter, function($value, $hook_key){
+			return strpos($hook_key, 'rootpress_migrations') !== false;
+		}, ARRAY_FILTER_USE_BOTH));
+		$migrations = [];
+		foreach($migrationsActions as $migration) {
+			$explodeName = explode('_', $migration);
+			$migrationNumber = (int) end($explodeName);
+			$migrations[$migrationNumber] = $migration;
+		}
+
+		// Verify if migration to execute exist
+		$migrationNumber = $assoc_args['version'];
+		if(!isset($migrations[$migrationNumber])) {
+			WP_CLI::error('Migration does not exist. Exit command');
+			exit();
+		}
+
+		// User commitment
+		$allDeclareMigrations = apply_filters('rootpress_migrations_list', []);
+		$migrationName = $allDeclareMigrations[$migrationNumber];
+		WP_CLI::success('Will execute migration : ' . $migrationName);
+		WPCLIService::askForUserCommit('Are you sure to execute this migration ?', true, true);
+
+		// Execute migration
+		do_action($migrations[$migrationNumber], 'up');
+
+		// Success !
+		WP_CLI::success('Migration number ' . $migrationNumber . ' has been executed succesfully');
+
+	}
 
 	/**
 	 * Manage Migration Version
