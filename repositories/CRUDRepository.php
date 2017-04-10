@@ -211,7 +211,7 @@ class CRUDRepository
 
 		    foreach(self::$fields['fields'] as $acfName){
 
-			    if(array_key_exists($acfName, $attributeMap)) {
+			    if((is_string($acfName) || is_integer($acfName)) && array_key_exists($acfName, $attributeMap)) {
 				    $fieldId = key( $attributeMap[ $acfName ] );
 				    $attr    = $attributeMap[ $acfName ][ $fieldId ];
 
