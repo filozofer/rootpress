@@ -1,4 +1,4 @@
-# RootPress beta 0.3.0
+# RootPress beta 0.4.0
 
 Rootpress is a Wordpress Skeleton helper to start building wordpress custom site using an MVC-like pattern.
 
