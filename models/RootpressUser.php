@@ -9,18 +9,11 @@ use WP_User;
  * Rootpress User for transversal function to User
  * This abstract model can be use as template for your own abstract parent user model
  */
-abstract class RootpressUser extends WP_User implements RootpressModelInterface {
+abstract class RootpressUser extends WP_User {
 
 	/** @var $ID int */
 	public $ID = 0;
 	public static $linked_post_type = 'WP_User';
-
-	/**
-	 * RootpressUser constructor
-	 * Set the post_type of the model
-	 */
-	public function __construct() {
-	}
 
 	/**
 	 * Constructor for this model
@@ -42,21 +35,6 @@ abstract class RootpressUser extends WP_User implements RootpressModelInterface 
 			$this->set( $fieldName, $fieldValue );
 		}
 
-		// Verify if mandatory field are
-		if ( method_exists( $this, 'getMandatoryFields' ) ) {
-			$mandatoryFields = $this->getMandatoryFields();
-			foreach ( $mandatoryFields as $field ) {
-				$calledClass = get_called_class();
-				if ( ! property_exists( $calledClass, $field ) ) {
-					$explodedClass = explode( '\\', $calledClass );
-					$class         = end( $explodedClass );
-					throw new BuildEntityException( 'Build entity ' . $class . ' failed. The mandatory field [' . $field . '] does not exists.' );
-				}
-				if ( is_null( $this->get( $field ) ) ) {
-					throw new BuildEntityException( 'Build entity ' . $this->post_title . ' failed. The mandatory field ' . $field . ' was not set.' );
-				}
-			}
-		}
 	}
 
 	/**

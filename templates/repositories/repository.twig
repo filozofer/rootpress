@@ -2,7 +2,7 @@
 
 namespace {{ namespace }}\repositories;
 
-use Rootpress\utils\Hydratator;
+use Rootpress;
 use Rootpress\repositories\CRUDRepository;
 
 /**
@@ -13,27 +13,10 @@ class {{ class_name }} extends CRUDRepository
     // Associate post type
     public static $associate_post_type = '{{ associate_custom_type }}';
 
-    /**
-     * Fields
-     */
-    public static $fields = [
-        'fields' => [],
-        'taxonomies' => []
-    ];
-
-    /**
-     * @param array $neededFields
-     * @param integer $neededDepth
-     *
-     * @return {{ class_name }}
-     */
-    public static function getInstance( $neededFields = null, $neededDepth = null ) {
-        return parent::getInstance( $neededFields, $neededDepth );
-    }
-
 {% if example %}
     /**
-     * Retrieve list of x last examples
+     * Retrieve list of x last examples.
+     *
      * @param $nb int number of last example to retrieve
      */
     public function findLastExamples($nb) {
@@ -45,8 +28,8 @@ class {{ class_name }} extends CRUDRepository
             'posts_per_page'    => $nb,
         ]);
 
-        // Hydrate them
-        return Hydratator::hydrates($posts, static::$fields, static::$depth);
+        // Convert them to models
+        return Rootpress::getEntityFromWPPost($posts);
 
     }
 {% endif %}

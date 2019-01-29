@@ -13,6 +13,9 @@
 namespace Rootpress;
 
 // Deploy the roots !
+use Rootpress\models\RootpressModel;
+use Rootpress\models\RootpressUser;
+use Rootpress\models\WP_Page;
 use WP;
 
 Rootpress::deployTheRoots();
@@ -23,8 +26,6 @@ Rootpress::deployTheRoots();
  */
 class Rootpress
 {
-    // Rootpress configuration
-    public static $configuration = [];
 
     // Current theme namespace guess during the load of rootpress configuration
     public static $currentThemeNamespace = null;
@@ -37,9 +38,6 @@ class Rootpress
      */
     public static function deployTheRoots() {
 
-        // Load Rootpress configuration
-        self::loadRootpressConfiguration();
-
         // Autoloader System
         self::rootpressAutoload();
 
@@ -51,31 +49,12 @@ class Rootpress
 
         // Models System
         add_action('init', ['Rootpress\Rootpress', 'modelsSystem'], 99);
-        add_filter('rootpress_before_hydrate', ['Rootpress\Rootpress', 'getEntityFromWPPost'], 99);
 
 	    // Load migrations
 	    self::loadMigrations();
 
-        // Launch Rootpress Services according to rootpress configuration
-        self::loadServices();
-
-    }
-
-    /**
-     * Load Rootpress Config  
-     * @filter rootpress_config_file_location Allow to override the location of the rootpress config file
-     */
-    public static function loadRootpressConfiguration() {
-
-        // Get config from Rootpress plugin
-        self::$configuration = json_decode(file_get_contents(plugin_dir_path(__FILE__) . '/rootpress-config.json'), true);
-
-        // Get config from actual theme if developer have put a config file in their theme to override rootpress-config and merge them to rootpress config
-        $defaultRootpressConfigFileLocation = get_stylesheet_directory() . '/rootpress-config.json';
-        $defaultRootpressConfigFileLocation = apply_filters('rootpress_config_file_location', $defaultRootpressConfigFileLocation);
-        if(file_exists($defaultRootpressConfigFileLocation)) {
-            self::$configuration = array_replace_recursive(self::$configuration, json_decode(file_get_contents($defaultRootpressConfigFileLocation), true));
-        }
+        // Launch Rootpress Hooks according to rootpress configuration
+        self::loadHooks();
 
     }
 
@@ -109,6 +88,7 @@ class Rootpress
 
         // Register the rootpress autoload function
         spl_autoload_register(function($class_name) {
+
             // Get list of declare namespace
             global $rootpress_namespaces_list;
 
@@ -180,6 +160,7 @@ class Rootpress
 
         // Get list of models folders
         $modelsDefaultFolderPaths = [
+            plugin_dir_path(__FILE__)  . 'models' => 'Rootpress\models',
             get_stylesheet_directory() . '/models/customtypes' => self::getCurrentThemeNamespace() . '\models\customtypes',
             get_stylesheet_directory() . '/models/taxonomies' => self::getCurrentThemeNamespace() . '\models\taxonomies'
         ];
@@ -202,65 +183,79 @@ class Rootpress
 
 	/**
 	 * Transform a WP Object to an entity by using the associative array self::linkPostTypeToClass which have been populate during models declaration
-	 * This method is call at the beginning of the hydrate process by Hydratator using a filter
+	 * This method must be call inside your repositories to convert your WP_Post / WP_User / ..  into your proper model
+     * Exemple: A WP_Post with a post_type "book" become a Book entity
 	 *
-	 * @param Object $object WP object to convert into model
+	 * @param Object|Object[] $object WP object to convert into model
 	 *
-	 * @return null|WP
+	 * @return null|RootpressModel|RootpressUser
 	 */
     public static function getEntityFromWPPost($object) {
-        $WPC = null;
 
-        // Transforme the object to one of the declare model if we found his associate class
-        if (isset($object->post_type) && isset(self::$linkPostTypeToClass[$object->post_type])) {
-            $WPC = new self::$linkPostTypeToClass[$object->post_type]();
-        } 
-        elseif (isset($object->taxonomy) && isset(self::$linkPostTypeToClass[$object->taxonomy])) {
-            $WPC = new self::$linkPostTypeToClass[$object->taxonomy]();
-        }
-        else if(get_class($object) === 'WP_User' && isset(self::$linkPostTypeToClass['WP_User'])) {
-            $WPC = new self::$linkPostTypeToClass['WP_User']();
-        }
+        // Handle array and single case
+        $WP_Entities = (is_array($object)) ? $object : [$object];
+        $builtEntities = [];
+        foreach($WP_Entities as $WP_Entity) {
 
-        // Import all the key in the new object model
-        if ($WPC != null) {
-            foreach ($object as $key => $value) {
-                $WPC->$key = $value;
+            // Built entity
+            $entity = null;
+
+            // Transform the object to one of the declare model if we found his associate class
+            if (isset($WP_Entity->post_type) && isset(self::$linkPostTypeToClass[$WP_Entity->post_type])) {
+                $entity = new self::$linkPostTypeToClass[$WP_Entity->post_type]();
             }
-            // Return the new object model
-            return $WPC;
+            elseif (isset($WP_Entity->taxonomy) && isset(self::$linkPostTypeToClass[$WP_Entity->taxonomy])) {
+                $entity = new self::$linkPostTypeToClass[$WP_Entity->taxonomy]();
+            }
+            else if($WP_Entity !== null && get_class($WP_Entity) === 'WP_User' && isset(self::$linkPostTypeToClass['WP_User'])) {
+                $entity = new self::$linkPostTypeToClass['WP_User']();
+            }
+
+            // Import all the key in the new object model
+            if ($entity != null) {
+                foreach ($WP_Entity as $key => $value) {
+                    $entity->$key = $value;
+                }
+
+                // Call the construct method to init ACF Fields
+                $entity->construct();
+            }
+            // No filter has been executed, return the same object we got
+            else {
+                $entity = $WP_Entity;
+            }
+
+            // Keep entity converted
+            $builtEntities[] = $entity;
         }
 
-        // No filter has been executed, return the same object we got
-        return $object;
+        // Return the entity/ entities
+        return (is_array($object)) ? $builtEntities : $builtEntities[0];
+
     }
 
     /**
-     * Load Services declare in options file and start theme
+     * Load Hooks declare in options file and start theme
      */
-    public static function loadServices() {
+    public static function loadHooks() {
 
-        // Get list of service folders
-        $servicesDefaultFolderPaths = [
-            plugin_dir_path(__FILE__) . 'services' => 'Rootpress\services',
-            get_stylesheet_directory() . '/services' => self::getCurrentThemeNamespace() . '\services'
+        // Get list of hook folders
+        $hooksDefaultFolderPaths = [
+            plugin_dir_path(__FILE__) . 'hooks' => 'Rootpress\hooks',
+            get_stylesheet_directory() . '/hooks' => self::getCurrentThemeNamespace() . '\hooks'
         ];
 
-        //Load all services class and then start them
-        self::loadFilesFromPaths('service', $servicesDefaultFolderPaths, function($classPath){
+        //Load all hooks class and then start them
+        self::loadFilesFromPaths('hook', $hooksDefaultFolderPaths, function($classPath){
 
-            // Is this service is enable inside rootpress configuration ?
-            if(isset(self::$configuration['services']) && isset(self::$configuration['services'][$classPath]) && (self::$configuration['services'][$classPath] || is_array(self::$configuration['services'][$classPath]))) {
-
-                // Call startService method for each service
-                if(method_exists($classPath, 'startService')) {
-                    $classPath::startService();
-                }
-                else {
-                    throw new \Exception('Error during Rootpress services loading. The service class ' . $classPath . ' seem to be enable in your rootpress configuration file but the method "startService" cannot be found inside that class.', 1);
-                }
-
+            // Call startService method for each hook
+            if(method_exists($classPath, 'hooks')) {
+                $classPath::hooks();
             }
+            else {
+                throw new \Exception('Error during Rootpress hooks loading. The hook class ' . $classPath . ' has been founded but the method "hooks" cannot be found inside that class.', 1);
+            }
+
         });
         
     }

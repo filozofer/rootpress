@@ -1,215 +1,37 @@
 <?php
 
 namespace Rootpress\repositories;
-use Rootpress\exception\Media\PersistenseAttachmentInsertionException;
-use Rootpress\exception\Media\PersistenseChmodAttachmentFailedException;
-use Rootpress\exception\Media\PersistenseMediaException;
-use Rootpress\exception\Media\PersistenseUploadAttachmentFailedException;
-use Rootpress\utils\FileUtils;
-use Valitron\Validator;
+
+use Rootpress\models\WP_Media;
+use Rootpress\Rootpress;
 
 /**
  * MediaRepository
  */
-class MediaRepository {
-
-    // Repository parameters
-    public static $instance;
-
-    /**
-     * Get class instance
-     *
-     * @return MediaRepository
-     */
-    public static function getInstance()
-    {
-        if (is_null(self::$instance)) {
-            $childclass = get_called_class();
-            self::$instance = new $childclass;
-        }
-
-        return self::$instance;
-    }
+class MediaRepository extends CRUDRepository {
 
 	/**
-     * Find one media by ID and return all it's meta
+     * Find one media by ID.
+     *
      * @param $mediaId int ID of the media to retrieve
-     * @param $params array of params to retrieve
-     * @return array metadata of the media to retrieve
+     * @return WP_Media metadata of the media to retrieve
      */
-    public function findOne($mediaId, $params = ['alt', 'caption', 'description', 'href', 'src', 'title', 'size', 'id']) {
+    public static function findOne($mediaId) {
 
         //Get media url to test if exist
         $attachment = get_post($mediaId);
+        return Rootpress::getEntityFromWPPost($attachment);
 
-        //Return null if no media found
-        if($attachment->guid == false) {
-            return null;
-        }
-
-        //Get metadata ask by user
-        $result = [];
-        foreach ($params as $param) {
-            switch ($param) {
-                case 'alt': $result[$param] = get_post_meta($mediaId, '_wp_attachment_image_alt', true); break;
-                case 'href': $result[$param] = get_permalink($mediaId); break;
-                case 'caption': $result[$param] = $attachment->post_excerpt; break;
-                case 'description': $result[$param] =  $attachment->post_content; break;
-                case 'src': $result[$param] = $attachment->guid; break;
-                case 'title': $result[$param] = $attachment->post_name; break;
-                case 'id': $result[$param] = $attachment->ID; break;
-                default: break;
-            }
-        }
-
-        //Return metadata
-		return $result;
 	}
 
     /**
-     * Find one media by ID and return it's public URL
+     * Retrieve public url of media from his ID.
+     *
      * @param $mediaId int ID of the media to retrieve
      * @return string url of the media to retrieve
      */
-    public function findOneUrl($mediaId) {
-        $media = wp_get_attachment_url($mediaId);
-        return $media;
+    public static function findUrlFromId($mediaId) {
+        return wp_get_attachment_url($mediaId);
     }
-
-	/**
-	 * Persist a media file
-	 *
-	 * @param array|string $media
-	 * @param $uploadDir
-	 *
-	 * @return int
-	 * @throws PersistenseMediaException
-	 */
-	public function persist( $media, $uploadDir = null, $options = null) {
-		$media_id = false;
-
-		// Detect what kind of media we have (case: media upload via form)
-		if($this->mediaIsFormAttachment($media)){
-			$media_id = $this->persistFormAttachment($media, $uploadDir, $options);
-		}
-
-		// Detect what kind of media we have (case: string)
-		if(is_string($media)) {
-			$media_id = $this->persistPathAttachment($media, $options);
-		}
-
-		if(!is_integer($media_id) || $media_id === 0){
-			throw new PersistenseMediaException();
-		}
-		return $media_id;
-	}
-
-	/**
-	 * Check if the media is an attachment file from $_FILES
-	 * @param $media
-	 *
-	 * @return bool
-	 */
-	private function mediaIsFormAttachment( $media ){
-		$result = false;
-		if(is_array($media)){
-			$v = new Validator($media);
-			$v->rule('required', ['name', 'type', 'tmp_name']);
-
-			$result = $v->validate();
-		}
-
-		return $result;
-	}
-
-	/**
-	 * Persist an attachment file from $_FILES in WP database
-	 *
-	 * @param array $media
-	 * @param string $uploadDir
-	 * @param array $options
-	 *
-	 * @return int
-	 * @throws PersistenseAttachmentInsertionException
-	 * @throws PersistenseChmodAttachmentFailedException
-	 * @throws PersistenseUploadAttachmentFailedException
-	 */
-	private function persistFormAttachment(array $media, $uploadDir = null, $options = null) {
-
-		// Get path to upload directory
-		$path = is_null($uploadDir) ? wp_upload_dir()['path'] . '/' : $uploadDir;
-
-		// Get formated file name with datetime
-		$formattedFileName = FileUtils::formatFileName($media['name']);
-
-		// Concat the upload path with the formated file name
-		$fullPath = $path . $formattedFileName;
-
-		// Move uploaded attachment to upload directory and check that it returned a success
-		if(!move_uploaded_file($media['tmp_name'], $fullPath)){
-			throw new PersistenseUploadAttachmentFailedException();
-		}
-
-		// Change attachment mod to 660 and check that it returned a success
-		if(!chmod($fullPath, 0660)){
-			throw new PersistenseChmodAttachmentFailedException();
-		}
-
-		// Create the WP attachment array
-		$attachment = [
-			'guid' => $fullPath,
-			'post_title' => $formattedFileName,
-			'post_content' => '',
-			'post_status' => 'private',
-			'post_mime_type' => finfo_file(finfo_open(FILEINFO_MIME_TYPE), $fullPath),
-			'post_size' => FileUtils::getFileSize($fullPath),
-		];
-		if(!is_null($options)) {
-			$attachment = array_merge($attachment, $options);
-		}
-
-		// Try to insert the new attachment
-		$attachmentId = wp_insert_attachment($attachment, $fullPath);
-		if(!is_integer($attachmentId) || $attachmentId === 0){
-			throw new PersistenseAttachmentInsertionException();
-		}
-
-		// Return the attachment id
-		return $attachmentId;
-	}
-
-	/**
-	 * Persist an attachment file from $_FILES in WP database
-	 *
-	 * @param string $fullPath
-	 * @param array $options
-	 *
-	 * @return int
-	 * @throws PersistenseAttachmentInsertionException
-	 */
-	private function persistPathAttachment($fullPath, $options = null) {
-
-		// Create the WP attachment array
-		$attachment = [
-			'guid'              => $fullPath,
-			'post_title'        => basename($fullPath),
-			'post_content'      => '',
-			'post_status'       => 'private',
-			'post_mime_type'    => finfo_file(finfo_open(FILEINFO_MIME_TYPE), $fullPath),
-			'post_size'         => FileUtils::getFileSize($fullPath),
-		];
-		if(!is_null($options)) {
-			$attachment = array_merge($attachment, $options);
-		}
-
-		// Try to insert the new attachment
-		$attachmentId = wp_insert_attachment($attachment, $fullPath);
-		if(!is_integer($attachmentId) || $attachmentId === 0){
-			throw new PersistenseAttachmentInsertionException();
-		}
-
-		// Return the attachment id
-		return $attachmentId;
-	}
 
 }

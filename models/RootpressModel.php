@@ -2,19 +2,32 @@
 
 namespace Rootpress\models;
 
-use PoivreRouge\models\customtypes\Client;
-use Rootpress\exception\CRUD\BuildEntityException;
-
 /**
  * Rootpress Model for transversal function to models
  * This abstract model can be use as template for your own abstract parent model
  */
-abstract class RootpressModel implements RootpressModelInterface {
+abstract class RootpressModel {
 
 	/** @var $ID int */
 	public $ID = 0;
 	public $post_type = '';
 	public static $linked_post_type = '';
+
+    /**
+     * Associative array of the entity advanced custom fields
+     * Must follow : field_name => field_key
+     * @var array
+     */
+    public static $acf_mapping = [
+    ];
+
+    /**
+     * Associative array of the entity advanced custom fields define dynamically
+     * Must follow : field_name => field_key
+     * @var array
+     */
+    public $acf_mapping_dynamic = [
+    ];
 
 	/**
 	 * RootpressModel constructor
@@ -29,41 +42,26 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 * Override this function in your child class to do post treatement after hydratation
 	 */
 	public function construct() {
+
+	    // Declare each ACF fields on the entity
+	    foreach (static::$acf_mapping as $fieldName => $fieldKey) {
+	        $this->set($fieldName, new LazyACFLoader($fieldKey, $fieldName, $this->ID));
+        }
+
 	}
 
 	/**
-	 * Build object from array of data
+	 * Hydrate object from array
 	 *
-	 * @param array $data
-	 *
-	 * @throws BuildEntityException
+	 * @param array $attributes
 	 */
-	public function build( array $data ) {
+	public function hydrate( array $attributes ) {
+
 		// Set all the field from $data
-		foreach ( $data as $fieldName => $fieldValue ) {
+		foreach ( $attributes as $fieldName => $fieldValue ) {
 			$this->set( $fieldName, $fieldValue );
 		}
 
-		// Set post title if method buildPostTitle exist
-		if ( method_exists( $this, 'buildPostTitle' ) ) {
-			$this->post_title = $this->buildPostTitle();
-		}
-
-		// Verify if mandatory field are
-		if ( method_exists( $this, 'getMandatoryFields' ) ) {
-			$mandatoryFields = $this->getMandatoryFields();
-			foreach ( $mandatoryFields as $field ) {
-				$calledClass = get_called_class();
-				if ( ! property_exists( $calledClass, $field ) ) {
-					$explodedClass = explode( '\\', $calledClass );
-					$class         = end( $explodedClass );
-					throw new BuildEntityException( 'Build entity ' . $class . ' failed. The mandatory field [' . $field . '] does not exists.' );
-				}
-				if ( is_null( $this->get( $field ) ) ) {
-					throw new BuildEntityException( 'Build entity ' . $this->post_title . ' failed. The mandatory field ' . $field . ' was not set.' );
-				}
-			}
-		}
 	}
 
 	/**
@@ -76,16 +74,20 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 */
 	public function get( $paramName ) {
 
-		if ( array_key_exists( $paramName, $this->getAttributeMapping() ) ) {
-			$paramName = reset( $this->getAttributeMapping()[ $paramName ] );
+	    // Lazy load the ACF field value
+		if (isset($this->$paramName) && is_a($this->$paramName, LazyACFLoader::class)) {
+			$this->$paramName = $this->$paramName->getValue();
 		}
 
+		// Verify if getter method exist for this attribute and avoid calling it again if it's already the getter which have call this method
 		$getter = 'get' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
-		if ( method_exists( $this, $getter ) ) {
+		if ( method_exists( $this, $getter ) && $getter != debug_backtrace()[1]['function']) {
 			return $this->$getter();
 		}
 
+		// Return attribute value default behaviour
 		return $this->$paramName;
+
 	}
 
 	/**
@@ -98,16 +100,19 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 * @return mixed
 	 */
 	public function set( $paramName, $value ) {
-		if ( array_key_exists( $paramName, $this->getAttributeMapping() ) ) {
-			$paramName = reset( $this->getAttributeMapping()[ $paramName ]);
-		}
 
+	    // Verify if setter method exist for this attribute
 		$setter = 'set' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
 		if ( method_exists( $this, $setter ) ) {
 			return $this->$setter( $value );
 		}
 
-		return $this->$paramName = $value;
+		// Set value default method
+		$this->$paramName = $value;
+
+		// Return $this to allow chain set call if needed
+		return $this;
+
 	}
 
 	/**
@@ -115,42 +120,42 @@ abstract class RootpressModel implements RootpressModelInterface {
 	 * If you want to respect encapsulation rules you need to declare all your object fields as private attribute inside your child class
 	 * When the hydrate process will try to hydrate your field, these magic function will call the generics getter and setter
 	 */
+
 	/**
 	 * Magic getter
 	 *
 	 * @param $name
+     * @return mixed
 	 */
 	public function __get( $name ) {
 		return $this->get( $name );
 	}
 
+    /**
+     * Magic setter
+     *
+     * @param $name
+     * @return $this
+     */
 	public function __set( $name, $value ) {
-		$this->set( $name, $value );
+        return $this->set( $name, $value );
 	}
 
-	/**
-	 * Get ACF field key from field name
-	 *
-	 * @param $fieldName
-	 *
-	 * @return string
-	 * @throws \Exception
-	 */
-	public function getAcfFieldKeyFromName( $fieldName ) {
 
-		// Method exist ?
-		if ( ! method_exists( $this, 'getAttributeMapping' ) ) {
-			throw new \Exception( 'You must implement getAttributeMapping in your model class before using this function.' );
-		}
+    /**
+     * Load all the ACF fields values
+     * (mostly for debug purpose ! Lazy process is here for performance reason)
+     *
+     * @return RootpressModel
+     */
+    public function loadACF() {
 
-		// Find field and return it
-		$fields = $this->getAttributeMapping();
-		if ( ! isset( $fields[ $fieldName ] ) ) {
-			throw new \Exception( 'Field not found in getAttributeMapping. Cannot retrieve associate field key.' );
-		}
+        // Declare each ACF fields on the entity
+        foreach (static::$acf_mapping as $fieldName => $fieldKey) {
+            $this->get($fieldName);
+        }
+        return $this;
 
-		return key( $fields[ $fieldName ] );
-
-	}
+    }
 
 }

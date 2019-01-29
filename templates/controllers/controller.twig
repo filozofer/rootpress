@@ -41,7 +41,7 @@ class {{ class_name }}
         $data['post'] = new TimberPost();
 
         //Get current sample
-        $data['example'] = ExampleRepository::getInstance()->findOne($post->ID);
+        $data['example'] = ExampleRepository::findOne($post->ID);
 
     }
 {% endif %}
