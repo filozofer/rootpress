@@ -13,19 +13,6 @@ class {{ class_name }} extends RootpressModel {
     //Declare which post_type this entity representing
     public static $linked_post_type = '{{ posttype_name }}';
 
-    //List of params to modify the name to keep them
-    public static $paramsNameToChange = [
-        'ID'               => 'id',
-        'post_title'	   => 'title',
-        'post_date'		   => 'date',
-        'post_type'		   => 'type'
-    ];
-
-    //Order of attributes
-    public static $order_attributes = [
-        'id', 'title', 'date', 'type'
-    ];
-
     /**
      * Declare Post Type to Wordpress
      */

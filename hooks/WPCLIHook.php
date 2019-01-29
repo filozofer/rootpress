@@ -1,37 +1,37 @@
 <?php
 
-namespace Rootpress\services;
+namespace Rootpress\hooks;
 
 use \WP_CLI_Command;
 use \WP_CLI;
 use \Timber;
 
-// Only load this service when WP_CLI is loaded
+// Only load this hook when WP_CLI is loaded
 if(!class_exists('WP_CLI') || !class_exists('WP_CLI_Command')) {
     return;
 }
 
 /**
- * WPCLIService class allow you to use Rootpress with WP CLI
+ * WPCLIHook class allow you to use Rootpress with WP CLI
  * @documentation http://wp-cli.org/docs/commands-cookbook/ && http://wp-cli.org/docs/internal-api/
  */
-class WPCLIService extends WP_CLI_Command {
+class WPCLIHook extends WP_CLI_Command {
 
     /**
-     * Start the service
+     * Start the hook
      */
-    public static function startService() {
+    public static function hooks() {
 
         // Declare this class as a WP CLI Command class
         if (defined( 'WP_CLI' ) && WP_CLI) {
-            WP_CLI::add_command('rootpress', 'Rootpress\services\WPCLIService');
+            WP_CLI::add_command('rootpress', 'Rootpress\hooks\WPCLIHook');
         }
         else {
-            throw new \Exception('Rootpress WPCLIService is enable but it seem you have not install WP_CLI. Please install WP_CLI or disable this service inside your rootpress-config.json.');
+            throw new \Exception('Rootpress WPCLIHook is enable but it seem you have not install WP_CLI. Please install WP_CLI or disable this hook inside your rootpress-config.json.');
         }
 
         // Add Rootpress template folder to list of folders template using by Timber
-        add_action('plugins_loaded', ['Rootpress\services\WPCLIService', 'declareTemplateFolderToTimber']);
+        add_action('plugins_loaded', ['Rootpress\hooks\WPCLIHook', 'declareTemplateFolderToTimber']);
 
     }
 
@@ -50,7 +50,7 @@ class WPCLIService extends WP_CLI_Command {
      *   - model
      *   - repository
      *   - controller
-     *   - service
+     *   - hook
      * ---
      *
      * [--type=<type>]
@@ -95,8 +95,8 @@ class WPCLIService extends WP_CLI_Command {
             // Generate model
             case 'model': $this->generateModel($args, $assoc_args); break;
 
-            // Generate service
-            case 'service': $this->generateService($args, $assoc_args); break;
+            // Generate hook
+            case 'hook': $this->generateHook($args, $assoc_args); break;
 
             // Generate controller
             case 'controller': $this->generateController($args, $assoc_args); break;
@@ -190,14 +190,14 @@ class WPCLIService extends WP_CLI_Command {
 
         // Ask to user all the needed informations
         $newTheme = [
-            'name'          => WPCLIService::askToUser('What is your Theme name ?', 'ChildTheme'),
-            'description'   => WPCLIService::askToUser('Theme description ?', ''),
-            'author'        => WPCLIService::askToUser('Theme author ?', ''),
-            'author_uri'    => WPCLIService::askToUser('Theme author URI ?', ''),
-            'template'      => WPCLIService::askToUser('What is your parent theme ?', null, $themes),
-            'version'       => WPCLIService::askToUser('What is your Theme version number ?', '1.0.0'),
+            'name'          => WPCLIHook::askToUser('What is your Theme name ?', 'ChildTheme'),
+            'description'   => WPCLIHook::askToUser('Theme description ?', ''),
+            'author'        => WPCLIHook::askToUser('Theme author ?', ''),
+            'author_uri'    => WPCLIHook::askToUser('Theme author URI ?', ''),
+            'template'      => WPCLIHook::askToUser('What is your parent theme ?', null, $themes),
+            'version'       => WPCLIHook::askToUser('What is your Theme version number ?', '1.0.0'),
         ];
-        $newTheme['text_domain'] = WPCLIService::askToUser('What is your Theme text-domain ?', strtolower(str_replace(' ', '-', $newTheme['name'])));
+        $newTheme['text_domain'] = WPCLIHook::askToUser('What is your Theme text-domain ?', strtolower(str_replace(' ', '-', $newTheme['name'])));
         $newTheme['namespace'] = $newTheme['spaceless_name'] = str_replace(' ', '', $newTheme['name']);
 
         // Rootpress theme architecture
@@ -225,17 +225,17 @@ class WPCLIService extends WP_CLI_Command {
         $newThemePath = WP_CONTENT_DIR . '/themes/' . $newTheme['name'];
         if(is_dir($newThemePath)) {
             WP_CLI::warning('Theme folder already exist !');
-            WPCLIService::askForUserCommit('Are you sure to execute this command ?', true, true);
+            WPCLIHook::askForUserCommit('Are you sure to execute this command ?', true, true);
         }
 
         // Create the new theme folders !
         $this->createFoldersArchitecture($foldersArchitecture, WP_CONTENT_DIR . '/themes');
 
         // Create style.css
-        WPCLIService::generateFile($newThemePath . '/style.css', 'style.css.twig', $newTheme);
+        WPCLIHook::generateFile($newThemePath . '/style.css', 'style.css.twig', $newTheme);
 
         // Create functions.php
-        WPCLIService::generateFile($newThemePath . '/functions.php', 'functions.php.twig', $newTheme);
+        WPCLIHook::generateFile($newThemePath . '/functions.php', 'functions.php.twig', $newTheme);
 
         // Put basic screenshot file
         copy(dirname(plugin_dir_path(__FILE__)) . '/templates/screenshot.png', WP_CONTENT_DIR . '/themes/' . $newTheme['name'] . '/screenshot.png');
@@ -293,19 +293,19 @@ class WPCLIService extends WP_CLI_Command {
         $this->generateFile($path . '/views/layout.twig', 'views/layout.twig.twig');
 
         // Override default page template ?
-        if(WPCLIService::askForUserCommit('Do you want to override default page template ?', 'y')) {
+        if(WPCLIHook::askForUserCommit('Do you want to override default page template ?', 'y')) {
             $this->generateFile($path . '/page.php', 'page.php.twig');
             $this->generateFile($path . '/views/page.twig', 'views/page.twig.twig');
         }
 
         // Override header ?
-        if(WPCLIService::askForUserCommit('Do you want to override theme header ?', 'y')) {
+        if(WPCLIHook::askForUserCommit('Do you want to override theme header ?', 'y')) {
             $this->generateFile($path . '/header.php', 'header.php.twig');
             $this->generateFile($path . '/views/header.twig', 'views/header.twig.twig');
         }
 
         // Override footer ?
-        if(WPCLIService::askForUserCommit('Do you want to override theme footer ?', 'y')) {
+        if(WPCLIHook::askForUserCommit('Do you want to override theme footer ?', 'y')) {
             $this->generateFile($path . '/footer.php', 'footer.php.twig');
             $this->generateFile($path . '/views/footer.twig', 'views/footer.twig.twig');
         }
@@ -321,7 +321,7 @@ class WPCLIService extends WP_CLI_Command {
     private function generateModel($args, $assoc_args)
     {
         // Extract type from command param or ask user if not exist
-        $which = (isset($assoc_args['type'])) ? $assoc_args['type'] : WPCLIService::askToUser('Generate model for custom type or taxonomy ?', 0, [
+        $which = (isset($assoc_args['type'])) ? $assoc_args['type'] : WPCLIHook::askToUser('Generate model for custom type or taxonomy ?', 0, [
             'custom-type' => 'Custom Type',
             'taxonomy'  => 'Taxonomy'
         ]);
@@ -335,7 +335,7 @@ class WPCLIService extends WP_CLI_Command {
         }
 
         // Ask if we need to generate a controller for that model
-        if(WPCLIService::askForUserCommit('Generate a controller class for that model ?', 'y')) {
+        if(WPCLIHook::askForUserCommit('Generate a controller class for that model ?', 'y')) {
             WP_CLI::run_command(['rootpress', 'generate', 'controller'], [
                 'name'      => $config['class_name'] . 'Controller',
                 'example'   => (isset($assoc_args['example'])) ? $assoc_args['example'] : false
@@ -343,7 +343,7 @@ class WPCLIService extends WP_CLI_Command {
         }
 
         // Ask if we need to generate a repository for that model
-        if(WPCLIService::askForUserCommit('Generate a repository class for that model ?', 'y')) {
+        if(WPCLIHook::askForUserCommit('Generate a repository class for that model ?', 'y')) {
             WP_CLI::run_command(['rootpress', 'generate', 'repository'], [
                 'name'          => $config['class_name'] . 'Repository',
                 'custom-type'   => isset($config['posttype_name']) ? $config['posttype_name'] : $config['taxonomy_name'],
@@ -368,36 +368,36 @@ class WPCLIService extends WP_CLI_Command {
         $newModel = [
             'namespace'     => str_replace(' ', '', $currentTheme->get('Name')),
             'text_domain'   => $currentTheme->get('TextDomain'),
-            'class_name'    => WPCLIService::askToUser('Model class name ?'),
-            'posttype_name' => WPCLIService::askToUser('Model post_type name ?'),
-            'label_name'    => WPCLIService::askToUser('Model label name (generally plural) ?'),
-            'description'   => WPCLIService::askToUser('Model description ?', ''),
-            'menu_icon'     => WPCLIService::askToUser('Model menu icon class ?', 'dashicons-admin-post'),
-            'translate'     => WPCLIService::askForUserCommit('Do you want to translate model wordings ?', 'n')
+            'class_name'    => WPCLIHook::askToUser('Model class name ?'),
+            'posttype_name' => WPCLIHook::askToUser('Model post_type name ?'),
+            'label_name'    => WPCLIHook::askToUser('Model label name (generally plural) ?'),
+            'description'   => WPCLIHook::askToUser('Model description ?', ''),
+            'menu_icon'     => WPCLIHook::askToUser('Model menu icon class ?', 'dashicons-admin-post'),
+            'translate'     => WPCLIHook::askForUserCommit('Do you want to translate model wordings ?', 'n')
         ];
 
         // Labels custom ?
-        if(WPCLIService::askForUserCommit('Do you want to customize labels ?', 'y')) {
+        if(WPCLIHook::askForUserCommit('Do you want to customize labels ?', 'y')) {
             $newModel += [
                 'labels' => [
-                    'name' => WPCLIService::askToUser('name: (Posts)', ''),
-                    'singular_name' => WPCLIService::askToUser('singular_name: (Post)', ''),
-                    'menu_name' => WPCLIService::askToUser('menu_name: (Posts)', ''),
-                    'parent_item_colon' => WPCLIService::askToUser('parent_item_colon: (Parent Post)', ''),
-                    'all_items' => WPCLIService::askToUser('all_items: (All Posts)', ''),
-                    'view_item' => WPCLIService::askToUser('view_item: (View Post)', ''),
-                    'add_new_item' => WPCLIService::askToUser('add_new_item: (Add New Post)', ''),
-                    'add_new' => WPCLIService::askToUser('add_new: (Add New)', ''),
-                    'edit_item' => WPCLIService::askToUser('edit_item: (Edit Post)', ''),
-                    'search_items' => WPCLIService::askToUser('search_items: (Search Posts)', ''),
-                    'not_found' => WPCLIService::askToUser('not_found: (No Post found)', ''),
-                    'not_found_in_trash' => WPCLIService::askToUser('not_found_in_trash: (No Post found in trash)', ''),
+                    'name' => WPCLIHook::askToUser('name: (Posts)', ''),
+                    'singular_name' => WPCLIHook::askToUser('singular_name: (Post)', ''),
+                    'menu_name' => WPCLIHook::askToUser('menu_name: (Posts)', ''),
+                    'parent_item_colon' => WPCLIHook::askToUser('parent_item_colon: (Parent Post)', ''),
+                    'all_items' => WPCLIHook::askToUser('all_items: (All Posts)', ''),
+                    'view_item' => WPCLIHook::askToUser('view_item: (View Post)', ''),
+                    'add_new_item' => WPCLIHook::askToUser('add_new_item: (Add New Post)', ''),
+                    'add_new' => WPCLIHook::askToUser('add_new: (Add New)', ''),
+                    'edit_item' => WPCLIHook::askToUser('edit_item: (Edit Post)', ''),
+                    'search_items' => WPCLIHook::askToUser('search_items: (Search Posts)', ''),
+                    'not_found' => WPCLIHook::askToUser('not_found: (No Post found)', ''),
+                    'not_found_in_trash' => WPCLIHook::askToUser('not_found_in_trash: (No Post found in trash)', ''),
                 ]
             ];
         }
 
         // Create the model
-        WPCLIService::generateFile($path . '/models/customtypes/' . $newModel['class_name'] . '.php' , 'models/customtypes/model.twig', $newModel);
+        WPCLIHook::generateFile($path . '/models/customtypes/' . $newModel['class_name'] . '.php' , 'models/customtypes/model.twig', $newModel);
 
         // Success !
         WP_CLI::success('Your new model for ' . $newModel['class_name'] . ' has been generated !');
@@ -420,36 +420,36 @@ class WPCLIService extends WP_CLI_Command {
         $newModel = [
             'namespace'     => str_replace(' ', '', $currentTheme->get('Name')),
             'text_domain'   => $currentTheme->get('TextDomain'),
-            'class_name'    => WPCLIService::askToUser('Taxonomy class name ?'),
-            'taxonomy_name' => WPCLIService::askToUser('Taxonomy slug name ?'),
-            'linked_post_type' => WPCLIService::askToUser('Taxonomy linked post type ?'),
-            'translate'     => WPCLIService::askForUserCommit('Do you want to translate model wordings ?', 'n')
+            'class_name'    => WPCLIHook::askToUser('Taxonomy class name ?'),
+            'taxonomy_name' => WPCLIHook::askToUser('Taxonomy slug name ?'),
+            'linked_post_type' => WPCLIHook::askToUser('Taxonomy linked post type ?'),
+            'translate'     => WPCLIHook::askForUserCommit('Do you want to translate model wordings ?', 'n')
         ];
 
         // Labels custom ?
-        if(WPCLIService::askForUserCommit('Do you want to customize labels ?', 'y')) {
+        if(WPCLIHook::askForUserCommit('Do you want to customize labels ?', 'y')) {
             $newModel += [
                 'labels' => [
-                    'name' => WPCLIService::askToUser('name: (Categories)', ''),
-                    'singular_name' => WPCLIService::askToUser('singular_name: (Category)', ''),
-                    'all_items' => WPCLIService::askToUser('all_items: (All the categories)', ''),
-                    'parent_item' => WPCLIService::askToUser('parent_item: (Parent Category)', ''),
-                    'new_item_name' => WPCLIService::askToUser('new_item_name: (New Category Name)', ''),
-                    'add_new_item' => WPCLIService::askToUser('add_new_item: (Add New Category)', ''),
-                    'edit_item' => WPCLIService::askToUser('edit_item: (Edit Category)', ''),
-                    'update_item' => WPCLIService::askToUser('update_item: (Update Category)', ''),
-                    'view_item' => WPCLIService::askToUser('view_item: (View Category)', ''),
-                    'add_or_remove_items' => WPCLIService::askToUser('add_or_remove_items: (Add or remove Category)', ''),
-                    'choose_from_most_used' => WPCLIService::askToUser('choose_from_most_used: (Choose from the most used categories)', ''),
-                    'popular_items' => WPCLIService::askToUser('popular_items: (Popular Categories)', ''),
-                    'search_items' => WPCLIService::askToUser('search_items: (Search Categories)', ''),
-                    'not_found' => WPCLIService::askToUser('not_found: (No categories found)', ''),
+                    'name' => WPCLIHook::askToUser('name: (Categories)', ''),
+                    'singular_name' => WPCLIHook::askToUser('singular_name: (Category)', ''),
+                    'all_items' => WPCLIHook::askToUser('all_items: (All the categories)', ''),
+                    'parent_item' => WPCLIHook::askToUser('parent_item: (Parent Category)', ''),
+                    'new_item_name' => WPCLIHook::askToUser('new_item_name: (New Category Name)', ''),
+                    'add_new_item' => WPCLIHook::askToUser('add_new_item: (Add New Category)', ''),
+                    'edit_item' => WPCLIHook::askToUser('edit_item: (Edit Category)', ''),
+                    'update_item' => WPCLIHook::askToUser('update_item: (Update Category)', ''),
+                    'view_item' => WPCLIHook::askToUser('view_item: (View Category)', ''),
+                    'add_or_remove_items' => WPCLIHook::askToUser('add_or_remove_items: (Add or remove Category)', ''),
+                    'choose_from_most_used' => WPCLIHook::askToUser('choose_from_most_used: (Choose from the most used categories)', ''),
+                    'popular_items' => WPCLIHook::askToUser('popular_items: (Popular Categories)', ''),
+                    'search_items' => WPCLIHook::askToUser('search_items: (Search Categories)', ''),
+                    'not_found' => WPCLIHook::askToUser('not_found: (No categories found)', ''),
                 ]
             ];
         }
 
         // Create the model
-        WPCLIService::generateFile($path . '/models/taxonomies/' . $newModel['class_name'] . '.php' , 'models/taxonomies/taxonomy.twig', $newModel);
+        WPCLIHook::generateFile($path . '/models/taxonomies/' . $newModel['class_name'] . '.php' , 'models/taxonomies/taxonomy.twig', $newModel);
 
         // Success !
         WP_CLI::success('Your new model for ' . $newModel['class_name'] . ' has been generated !');
@@ -471,12 +471,12 @@ class WPCLIService extends WP_CLI_Command {
         // Ask to user all the needed informations
         $newController = [
             'namespace'     => str_replace(' ', '', $currentTheme->get('Name')),
-            'class_name'    => (isset($assoc_args['name'])) ? $assoc_args['name'] : WPCLIService::askToUser('Controller class name ?'),
-            'example'       => (isset($assoc_args['example'])) ? $assoc_args['example'] : WPCLIService::askForUserCommit('Do you want example code inside ?', 'n'),
+            'class_name'    => (isset($assoc_args['name'])) ? $assoc_args['name'] : WPCLIHook::askToUser('Controller class name ?'),
+            'example'       => (isset($assoc_args['example'])) ? $assoc_args['example'] : WPCLIHook::askForUserCommit('Do you want example code inside ?', 'n'),
         ];
 
         // Create the controller
-        WPCLIService::generateFile($path . '/controllers/' . $newController['class_name'] . '.php' , 'controllers/controller.twig', $newController);
+        WPCLIHook::generateFile($path . '/controllers/' . $newController['class_name'] . '.php' , 'controllers/controller.twig', $newController);
 
         // Success !
         WP_CLI::success('Your new controller has been generated !');
@@ -497,23 +497,23 @@ class WPCLIService extends WP_CLI_Command {
         // Ask to user all the needed informations
         $newRepository = [
             'namespace'     => str_replace(' ', '', $currentTheme->get('Name')),
-            'class_name'    => (isset($assoc_args['name'])) ? $assoc_args['name'] : WPCLIService::askToUser('Repository class name ?'),
-            'associate_custom_type' => (isset($assoc_args['custom-type'])) ? $assoc_args['custom-type'] : WPCLIService::askToUser('What is the associate post type ?'),
-            'example'       => (isset($assoc_args['example'])) ? $assoc_args['example'] : WPCLIService::askForUserCommit('Do you want example code inside ?', 'n')
+            'class_name'    => (isset($assoc_args['name'])) ? $assoc_args['name'] : WPCLIHook::askToUser('Repository class name ?'),
+            'associate_custom_type' => (isset($assoc_args['custom-type'])) ? $assoc_args['custom-type'] : WPCLIHook::askToUser('What is the associate post type ?'),
+            'example'       => (isset($assoc_args['example'])) ? $assoc_args['example'] : WPCLIHook::askForUserCommit('Do you want example code inside ?', 'n')
         ];
 
         // Create the repository
-        WPCLIService::generateFile($path . '/repositories/' . $newRepository['class_name'] . '.php' , 'repositories/repository.twig', $newRepository);
+        WPCLIHook::generateFile($path . '/repositories/' . $newRepository['class_name'] . '.php' , 'repositories/repository.twig', $newRepository);
 
         // Success !
         WP_CLI::success('Your new repository has been generated !');
     }
 
     /**
-     * Generate a new service
-     * @command wp rootpress generate service
+     * Generate a new hook
+     * @command wp rootpress generate hook
      */
-    private function generateService($args, $assoc_args) {
+    private function generateHook($args, $assoc_args) {
 
         // Get current theme path
         $path = get_stylesheet_directory();
@@ -523,27 +523,27 @@ class WPCLIService extends WP_CLI_Command {
         $namespace = str_replace(' ', '', $currentTheme->get('Name'));
 
         // Ask to user all the needed informations
-        $newService = [
+        $newHook = [
             'namespace'     => $namespace,
-            'class_name'    => WPCLIService::askToUser('Service class name ?')
+            'class_name'    => WPCLIHook::askToUser('Hook class name ?')
         ];
 
-        // Create services folder if not exist in theme
-        if(!is_dir($path . '/services')) {
-            mkdir($path . '/services');
+        // Create hooks folder if not exist in theme
+        if(!is_dir($path . '/hooks')) {
+            mkdir($path . '/hooks');
         }
 
-        // Create the service class file
-        WPCLIService::generateFile($path . '/services/' . $newService['class_name'] . '.php' , 'services/service.twig', $newService);
+        // Create the hook class file
+        WPCLIHook::generateFile($path . '/hooks/' . $newHook['class_name'] . '.php' , 'hooks/hook.twig', $newHook);
 
         // Create or update the config file if user ask for it
-        if(WPCLIService::askForUserCommit('Do you want to enable your new service ?', 'y')) {
+        if(WPCLIHook::askForUserCommit('Do you want to enable your new hook ?', 'y')) {
 
-            // Get actual rootpress config which contains the list of enable services
-            $actualConfig = (file_exists($path . '/rootpress-config.json'))  ? json_decode(file_get_contents($path . '/rootpress-config.json'), true) : ['services' => []];
+            // Get actual rootpress config which contains the list of enable hooks
+            $actualConfig = (file_exists($path . '/rootpress-config.json'))  ? json_decode(file_get_contents($path . '/rootpress-config.json'), true) : ['hooks' => []];
 
             // Add the new line to config
-            $actualConfig['services'][$namespace . '\\services\\' . $newService['class_name']] = true;
+            $actualConfig['hooks'][$namespace . '\\hooks\\' . $newHook['class_name']] = true;
 
             // Write config file updated
             file_put_contents($path . '/rootpress-config.json', json_encode($actualConfig, (defined('JSON_PRETTY_PRINT') ? JSON_PRETTY_PRINT : 0)));
@@ -551,7 +551,7 @@ class WPCLIService extends WP_CLI_Command {
         }
 
         // Success !
-        WP_CLI::success('Your new service has been generated !');
+        WP_CLI::success('Your new hook has been generated !');
     }
 
 
@@ -699,7 +699,7 @@ class WPCLIService extends WP_CLI_Command {
         // File already exist ?
         if(file_exists($fullPath)) {
             WP_CLI::warning($fullPath . ' already exist.');
-            if(WPCLIService::askForUserCommit('Do you want to erase this file ?') === false) {
+            if(WPCLIHook::askForUserCommit('Do you want to erase this file ?') === false) {
                 return;
             }
         }
@@ -771,7 +771,7 @@ class WPCLIService extends WP_CLI_Command {
 	    }
 
 	    // User commitment
-	    WPCLIService::askForUserCommit('Are you sure to execute these migrations ?', true, true);
+	    WPCLIHook::askForUserCommit('Are you sure to execute these migrations ?', true, true);
 
 		// Launch all the migrations we have not pass yet
 	    foreach ($migrationsToLaunch as $migrationNumber => $migration) {
@@ -813,7 +813,7 @@ class WPCLIService extends WP_CLI_Command {
 		$allDeclareMigrations = apply_filters('rootpress_migrations_list', []);
 		$migrationName = $allDeclareMigrations[$migrationNumber];
 		WP_CLI::success('Will execute migration : ' . $migrationName);
-		WPCLIService::askForUserCommit('Are you sure to execute this migration ?', true, true);
+		WPCLIHook::askForUserCommit('Are you sure to execute this migration ?', true, true);
 
 		// Execute migration
 		do_action($migrations[$migrationNumber], 'up');
@@ -836,7 +836,7 @@ class WPCLIService extends WP_CLI_Command {
 		WP_CLI::line('Actual migration version number is ' . $actualMigrationVersion);
 
 		// Ask wanted version
-		$versionToSet = (isset($assoc_args['set'])) ? (int) $assoc_args['set'] : WPCLIService::askToUser('Migration version number to set ?');
+		$versionToSet = (isset($assoc_args['set'])) ? (int) $assoc_args['set'] : WPCLIHook::askToUser('Migration version number to set ?');
 
 		// Update migration version number
 		update_option('rootpress_migrations', (int) $versionToSet);

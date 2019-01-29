@@ -1,4 +1,4 @@
-# RootPress beta 0.3.0
+# RootPress beta 0.4.0
 
 Rootpress is a Wordpress Skeleton helper to start building wordpress custom site using an MVC-like pattern.
 
@@ -16,7 +16,7 @@ Rootpress help you to start with a good architecture for your wordpress project 
 - Repositories
 - Controllers
 - Views
-- Services
+- Hooks
 
 ## Installation
 
@@ -48,8 +48,8 @@ wp rootpress generate model
 wp rootpress generate controller
 // Generate a new repository
 wp rootpress generate repository
-// Generate a new service
-wp rootpress generate service
+// Generate a new hook
+wp rootpress generate hook
 
 // Get help !
 wp rootpress generate --help
@@ -60,7 +60,7 @@ wp rootpress generate --help
 - Proper Documentation
 - Make this plugin available on Wordpress plugins store (and so via composer using wppackagist)
 - Better parent repositories & parent controllers
-- More Services class
+- More Hooks class
 - More Utils class
 - Router system with configuration file ?
 

@@ -2,49 +2,38 @@
 
 namespace Rootpress\repositories;
 
-use Rootpress\utils\Hydratator;
+use Rootpress\models\WP_Page;
+use Rootpress\Rootpress;
 
 /**
  *  PageRepository
  */
-class PageRepository {
+class PageRepository extends CRUDRepository {
 
-    //Repository parameters
-    public static $fields = [];
-    public static $depth = 2;
-    public static $instance;
+
+    // Associate post type
+    public static $associate_post_type = 'page';
 
     /**
-     * Get class instance
-     * @param $neededFields array of fields to set as settings
-     * @param $neededDepth int depth to set as settings
+     * Find one page by ID.
+     *
+     * @param $pageId int ID of the page to retrieve
+     * @return WP_Page
      */
-    public static function getInstance($neededFields = null, $neededDepth = null)
-    {
-        if (is_null(self::$instance)) {
-            $childclass = get_called_class();
-            self::$instance = new $childclass;
-        }
-
-        // Set fields if user ask for it
-        if(!is_null($neededFields)) {
-            static::$fields = (isset(static::$$neededFields)) ? static::$$neededFields : [];
-        }
-        // Set depth if user ask for it
-        if(!is_null($neededDepth)) {
-            static::$depth = $neededDepth;
-        }
-
-        return self::$instance;
+    public static function findOne($pageId) {
+        $page = get_post($pageId);
+        return Rootpress::getEntityFromWPPost($page);
     }
 
     /**
-     * Find one page by ID and hydrate it
-     * @param $pageId int ID of the page to retrieve
+     * Find one page by his path.
+     *
+     * @param $pagePath string Path uri of the page to retrieve
+     * @return WP_Page
      */
-    public function findOne($pageId) {
-        $page = get_post($pageId);
-        return Hydratator::hydrate($page, static::$fields, static::$depth);
+    public static function findOneByPath($pagePath) {
+        $page = get_page_by_path($pagePath);
+        return Rootpress::getEntityFromWPPost($page);
     }
 
 }

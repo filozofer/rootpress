@@ -15,16 +15,19 @@ namespace Rootpress\utils;
  	public static $disableCache = false;
  	public static $objectCache = [];
 
-	/**
-	 * Hydrate custom type
-	 * @param $object Object to hydrate
-	 * @param $fields Array['fields' => [], 'taxonomies' => []] This array allow to choose exactly which custom fields and taxonomies need to be retrieve (performance improvement)
-	 * You can set 'fields' attribute for custom fields and 'taxonomies' attribute for taxonomies. The arrays can be a list of string or can have others array inside to describe what to do
-	 * on a key (exemple: univers => ['color'] rather than 'univers' which get all the univers fields).
-	 * @param $depth maximal depth for hydration
-	 * @filter rootpress_before_hydrate Filter occur before begin the hydrate
-	 * @filter rootpress_after_hydrate_<post_type> Filter occur after object have been hydrated
-	 */
+	 /**
+	  * Hydrate custom type
+	  *
+	  * @param $object Object to hydrate
+	  * @param array['fields' => [], 'taxonomies' => []] $fields This array allow to choose exactly which custom fields and taxonomies need to be retrieve (performance improvement)
+	  * You can set 'fields' attribute for custom fields and 'taxonomies' attribute for taxonomies. The arrays can be a list of string or can have others array inside to describe what to do
+	  * on a key (exemple: univers => ['color'] rather than 'univers' which get all the univers fields).
+	  * @param integer $depth maximal depth for hydration
+	  *
+	  * @filter rootpress_before_hydrate Filter occur before begin the hydrate
+	  * @filter rootpress_after_hydrate_<post_type> Filter occur after object have been hydrated
+	  * @return false|mixed|Object|void|\WP_User
+	  */
 	public static function hydrate(&$object, $fields = [], $depth = 2) {
 
 		// Case null or not an object
@@ -100,7 +103,7 @@ namespace Rootpress\utils;
 			// Add the custom fields to the object
 			foreach ($customFields as $key => $value) {
 				$object->$key = $value;
-				$current = $object->$key;
+				$current = method_exists($object, 'get') ? $object->get($key) : $object->$key;
 
 				// Hydrate the child(s) if it's an object
 				if(is_array($object->$key) && count($object->$key) > 0 && isset($current[0]) && is_object($current[0]) && in_array(get_class($current[0]), ['WP_Post', 'WP_Term', 'WP_User'])) {
@@ -116,7 +119,9 @@ namespace Rootpress\utils;
 				else if(is_object($current) && in_array(get_class($current), ['WP_Post', 'WP_Term', 'WP_User'])){
 					// If we declare specific fields to return, send them to Hydratator
 					$fieldsForThisKey = (isset($fields['fields']) && isset($fields['fields'][$key]) && is_array($fields['fields'][$key])) ? $fields['fields'][$key] : [];
+					$actualLevelReporting = error_reporting(E_ERROR | E_WARNING);
 					$object->$key = self::hydrate($object->$key, $fieldsForThisKey, $depth - 1);
+					error_reporting($actualLevelReporting);
 				}
 				else if(is_array($object->$key) && isset($fields['fields']) && isset($fields['fields'][$key]) && is_array($fields['fields'][$key])) {
 					$fieldsForThisKey = $fields['fields'][$key];
@@ -185,7 +190,7 @@ namespace Rootpress\utils;
 
 	/**
 	 * Hydrate an array of custom type
-	 * @param $object array[WP_Post|WP_Term|WP_User] Array of objects to hydrate
+	 * @param array[WP_Post|WP_Term|WP_User] $object Array of objects to hydrate
 	 * @param $fields array Which fields we need to hydrate ?
 	 * @param $depth int maximal depth for hydration
 	 * @return array of hydrated objects

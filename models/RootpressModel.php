@@ -6,53 +6,113 @@ namespace Rootpress\models;
  * Rootpress Model for transversal function to models
  * This abstract model can be use as template for your own abstract parent model
  */
-abstract class RootpressModel  {
+abstract class RootpressModel {
 
-	//List of params to modify the name
-	public static $paramsNameToChange = [
-		'ID'      => 'id',
-		'term_id' => 'id'
-	];
+	/** @var $ID int */
+	public $ID = 0;
+	public $post_type = '';
+	public static $linked_post_type = '';
 
-	//List of default params in wordpress which we want to remove by default from the object return by wordpress (allow to have clean object)
-	public static $paramsToRemove = [
-		'ID', 'term_id', 'post_author', 'post_date_gmt', 'post_content', 'post_excerpt', 'post_status', 'comment_status',
-		'comment_status', 'ping_status', 'post_password', 'post_name', 'to_ping', 'pinged', 'post_modified',
-		'post_modified_gmt', 'post_content_filtered', 'post_parent', 'guid', 'menu_order', 'post_type',
-		'post_mime_type', 'comment_count', 'filter', 'post_title', 'post_date',
-		'term_group', 'term_taxonomy_id', 'taxonomy', 'parent', 'count', 'category',
-		'post_tag', 'post_format', 'object_id'
-	];
+    /**
+     * Associative array of the entity advanced custom fields
+     * Must follow : field_name => field_key
+     * @var array
+     */
+    public static $acf_mapping = [
+    ];
+
+    /**
+     * Associative array of the entity advanced custom fields define dynamically
+     * Must follow : field_name => field_key
+     * @var array
+     */
+    public $acf_mapping_dynamic = [
+    ];
+
+	/**
+	 * RootpressModel constructor
+	 * Set the post_type of the model
+	 */
+	public function __construct() {
+		$this->post_type = static::$linked_post_type;
+	}
 
 	/**
 	 * Constructor for this model
 	 * Override this function in your child class to do post treatement after hydratation
 	 */
 	public function construct() {
+
+	    // Declare each ACF fields on the entity
+	    foreach (static::$acf_mapping as $fieldName => $fieldKey) {
+	        $this->set($fieldName, new LazyACFLoader($fieldKey, $fieldName, $this->ID));
+        }
+
+	}
+
+	/**
+	 * Hydrate object from array
+	 *
+	 * @param array $attributes
+	 */
+	public function hydrate( array $attributes ) {
+
+		// Set all the field from $data
+		foreach ( $attributes as $fieldName => $fieldValue ) {
+			$this->set( $fieldName, $fieldValue );
+		}
+
 	}
 
 	/**
 	 * Generic getter
 	 * Prefer using this to access your attribute
+	 *
+	 * @param string $paramName
+	 *
+	 * @return mixed
 	 */
-	public function get($paramName) {
-		$getter = 'get' . ucwords($paramName);
-		if(method_exists($this, $getter)) {
+	public function get( $paramName ) {
+
+	    // Lazy load the ACF field value
+		if (isset($this->$paramName) && is_a($this->$paramName, LazyACFLoader::class)) {
+			$this->$paramName = $this->$paramName->getValue();
+		}
+
+		// Verify if getter method exist for this attribute and avoid calling it again if it's already the getter which have call this method
+		$getter = 'get' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
+		if ( method_exists( $this, $getter ) && $getter != debug_backtrace()[1]['function']) {
 			return $this->$getter();
 		}
+
+		// Return attribute value default behaviour
 		return $this->$paramName;
+
 	}
 
 	/**
 	 * Generic setter
 	 * Prefer using this to change value of your attribute
+	 *
+	 * @param string $paramName
+	 * @param mixed $value
+	 *
+	 * @return mixed
 	 */
-	public function set($paramName, $value) {
-		$setter = 'set' . ucwords($paramName);
-		if(method_exists($this, $setter)) {
-			return $this->$setter($value);
+	public function set( $paramName, $value ) {
+
+	    // Verify if setter method exist for this attribute
+		$setter = 'set' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
+		if ( method_exists( $this, $setter ) ) {
+			return $this->$setter( $value );
 		}
-		return $this->$paramName = $value;
+
+		// Set value default method
+		$this->$paramName = $value;
+
+		// Return $this to allow chain set call if needed
+		return $this;
+
 	}
 
 	/**
@@ -60,70 +120,42 @@ abstract class RootpressModel  {
 	 * If you want to respect encapsulation rules you need to declare all your object fields as private attribute inside your child class
 	 * When the hydrate process will try to hydrate your field, these magic function will call the generics getter and setter
 	 */
-	public function __get($name){ $this->get($name); }
-	public function __set($name, $value){ $this->set($name, $value); }
 
 	/**
-	 * Clean model by removing or rename default attributes inherit from WP_Post object
+	 * Magic getter
+	 *
+	 * @param $name
+     * @return mixed
 	 */
-	public function clean() {
-
-		//Extract attributes
-		$attributes = [];
-		foreach ($this as $key => $attribute) {
-			$attributes[$key] = $attribute;
-			unset($this->$key);
-		}
-
-		//Change params name
-		$paramsToChange = [];
-		foreach (static::$paramsNameToChange as $oldKey => $newKey) {
-			if(isset($attributes[$oldKey])) {
-				$paramsToChange[$newKey] = $attributes[$oldKey];
-				unset($attributes[$oldKey]);
-			}
-		}
-
-		//Remove params
-		foreach (static::$paramsToRemove as $param) {
-			unset($attributes[$param]);
-		}
-
-		//Re-Set all attributes
-		$attributes = array_merge($paramsToChange, $attributes);
-		foreach ($attributes as $key => $value) {
-			$this->$key = $value;
-		}
-
-		//Order attributes
-		$this->order();
+	public function __get( $name ) {
+		return $this->get( $name );
 	}
 
-	/**
-	 * Order the attributes as wanted if "order_attributes" static attribute is set in the class
-	 * Mostly use when you want to return your object in a web service, it allow to have property in the same order than your documentation for example
-	 */
-	public function order() {
-
-		//Only if class has defined an order for attributes
-		if(isset(static::$order_attributes) && is_array(static::$order_attributes)) {
-
-			//Create empty container
-			$data = new \stdClass();
-			foreach (static::$order_attributes as $attr) {
-				if(isset($this->$attr)) {
-					//Keep value attribute
-					$data->$attr = $this->$attr;
-
-					//Unset attributes
-					unset($this->$attr);
-
-					//Put the attribute at the bottom of the object
-					$this->$attr = $data->$attr;
-				}
-			}
-
-		}
+    /**
+     * Magic setter
+     *
+     * @param $name
+     * @return $this
+     */
+	public function __set( $name, $value ) {
+        return $this->set( $name, $value );
 	}
+
+
+    /**
+     * Load all the ACF fields values
+     * (mostly for debug purpose ! Lazy process is here for performance reason)
+     *
+     * @return RootpressModel
+     */
+    public function loadACF() {
+
+        // Declare each ACF fields on the entity
+        foreach (static::$acf_mapping as $fieldName => $fieldKey) {
+            $this->get($fieldName);
+        }
+        return $this;
+
+    }
 
 }
