@@ -141,6 +141,15 @@ abstract class RootpressModel {
         return $this->set( $name, $value );
 	}
 
+    /**
+     * Magic isset
+     *
+     * @param $name
+     * @return boolean
+     */
+	public function __isset( $name ) {
+        return true;
+    }
 
     /**
      * Load all the ACF fields values
