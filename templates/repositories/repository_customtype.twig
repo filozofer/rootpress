@@ -1,0 +1,40 @@
+<?php
+
+namespace {{ namespace }}\repositories;
+
+use Rootpress\Rootpress;
+use Rootpress\models\RootpressModel;
+use Rootpress\repositories\CRUDRepository;
+
+/**
+ * {{ class_name }}
+ */
+class {{ class_name }} extends CRUDRepository
+{
+    // Associate post type
+    public static $associate_post_type = '{{ associate_custom_type }}';
+
+{% if example %}
+    /**
+     * Retrieve list of x last examples.
+     *
+     * @param $nb int number of last example to retrieve
+     */
+    public function findLastExamples($nb) {
+
+        // Get Examples
+        $posts = new WP_Query([
+            'post_type'         => static::$associate_post_type,
+            'post_status'       => 'publish',
+            'suppress_filters'  => false,
+            'posts_per_page'    => $nb
+        ]);
+        $posts = $posts->get_posts();
+
+        // Convert them to models
+        return Rootpress::getEntityFromWPPost($posts);
+
+    }
+{% endif %}
+
+}

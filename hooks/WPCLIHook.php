@@ -347,6 +347,7 @@ class WPCLIHook extends WP_CLI_Command {
             WP_CLI::run_command(['rootpress', 'generate', 'repository'], [
                 'name'          => $config['class_name'] . 'Repository',
                 'custom-type'   => isset($config['posttype_name']) ? $config['posttype_name'] : $config['taxonomy_name'],
+                'type'          => $which,
                 'example'       => (isset($assoc_args['example'])) ? $assoc_args['example'] : false
             ]);
         }
@@ -498,12 +499,19 @@ class WPCLIHook extends WP_CLI_Command {
         $newRepository = [
             'namespace'     => str_replace(' ', '', $currentTheme->get('Name')),
             'class_name'    => (isset($assoc_args['name'])) ? $assoc_args['name'] : WPCLIHook::askToUser('Repository class name ?'),
+            'type'    => (isset($assoc_args['type'])) ? $assoc_args['type'] : WPCLIHook::askToUser('Generate repository for custom type or taxonomy ?', 0, [
+                'custom-type' => 'Custom Type',
+                'taxonomy'  => 'Taxonomy'
+            ]),
             'associate_custom_type' => (isset($assoc_args['custom-type'])) ? $assoc_args['custom-type'] : WPCLIHook::askToUser('What is the associate post type ?'),
             'example'       => (isset($assoc_args['example'])) ? $assoc_args['example'] : WPCLIHook::askForUserCommit('Do you want example code inside ?', 'n')
         ];
 
+        // Choose proper template base on type
+        $templateName = ($newRepository['type'] === 'custom-type') ? 'repository_customtype.twig' : 'repository_taxonomy.twig';
+
         // Create the repository
-        WPCLIHook::generateFile($path . '/repositories/' . $newRepository['class_name'] . '.php' , 'repositories/repository.twig', $newRepository);
+        WPCLIHook::generateFile($path . '/repositories/' . $newRepository['class_name'] . '.php' , 'repositories/' . $templateName, $newRepository);
 
         // Success !
         WP_CLI::success('Your new repository has been generated !');
