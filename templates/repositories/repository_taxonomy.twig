@@ -1,0 +1,17 @@
+<?php
+
+namespace {{ namespace }}\repositories;
+
+use Rootpress\Rootpress;
+use Rootpress\models\RootpressModel;
+use Rootpress\repositories\CRUDTaxonomyRepository;
+
+/**
+ * {{ class_name }}
+ */
+class {{ class_name }} extends CRUDTaxonomyRepository
+{
+    // Associate taxonomy (can be override in child class)
+    public static $associate_post_type = '{{ associate_custom_type }}';
+
+}
