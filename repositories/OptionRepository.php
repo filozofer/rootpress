@@ -20,9 +20,12 @@ class OptionRepository {
         $option = get_field($key, 'option');
 
         // Convert WP_Post if necessary
-        $option = (is_a($option, 'WP_Post') || (is_array($option) && is_a($option[0], 'WP_Post'))) ? Rootpress::getEntityFromWPPost($option) : $option;
-        
-        // Return the option value
+        $option = (
+            is_a($option, 'WP_Post') ||
+            (is_array($option) && isset($option[0]) && is_a($option[0], 'WP_Post'))
+        ) ? Rootpress::getEntityFromWPPost($option) : $option;
+
+        // Return the option values
         return $option;
 
     }
