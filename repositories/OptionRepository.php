@@ -1,6 +1,7 @@
 <?php
 
 namespace Rootpress\repositories;
+use Rootpress\Rootpress;
 
 /**
  * Repository for retrieve Options fields values
@@ -14,7 +15,16 @@ class OptionRepository {
      * @return mixed
      */
     public static function findOne($key) {
-       return get_field($key, 'option');
+
+        // Retrieve option value
+        $option = get_field($key, 'option');
+
+        // Convert WP_Post if necessary
+        $option = (is_a($option, 'WP_Post') || (is_array($option) && is_a($option[0], 'WP_Post'))) ? Rootpress::getEntityFromWPPost($option) : $option;
+        
+        // Return the option value
+        return $option;
+
     }
 
     /**
