@@ -148,7 +148,21 @@ abstract class RootpressModel {
      * @return boolean
      */
 	public function __isset( $name ) {
-        return true;
+
+	    // Verify if attribut exist
+	    if (isset($this->$name)) {
+            return TRUE;
+        }
+
+        // Or if getter exist
+        $getter = 'get' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $name ) ) );
+        if ( method_exists( $this, $getter )) {
+            return TRUE;
+        }
+
+        // Not exist
+        return FALSE;
+
     }
 
     /**

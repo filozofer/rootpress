@@ -116,6 +116,7 @@ class CRUDRepository {
 
 		// Post fields default values
 		$WPPostArray         = [
+		    'post_content'   => '',
 			'comment_status' => 'closed',
 			'ping_status'    => 'closed',
 			'post_status'    => 'publish',

@@ -34,7 +34,7 @@ class {{ class_name }} extends RootpressModel {
 {% endif %}
             'supports'      => [],
             'taxonomies'    => [],
-            'public'        => true,
+            'public'        => TRUE,
             'menu_icon'     => '{{ menu_icon }}'
         ];
         register_post_type(self::$linked_post_type, $args);
