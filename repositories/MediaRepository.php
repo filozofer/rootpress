@@ -38,16 +38,20 @@ class MediaRepository extends CRUDRepository {
     /**
      * Insert an attachment from an URL address.
      *
-     * @param  string $url
-     * @param  int    $parent_post_id
-     * @return int    Attachment ID
+     * @param string $url
+     * @param int    $parent_post_id Attachment parent id
+     * @param array  $metadatas Attachement metadata
+     * @return int attachment id
      */
-    public static function createFromUrl($url, $parent_post_id = null) {
+    public static function createFromUrl($url, $parent_post_id = null, $metadatas = []) {
 
         // Try to download attachment from url
         $http = new \WP_Http();
         $response = $http->request( $url );
-        if( $response['response']['code'] != 200 ) {
+        if(is_a($response, \WP_Error::class)) {
+            return false;
+        }
+        if($response['response']['code'] != 200 ) {
             return false;
         }
         $upload = wp_upload_bits( basename($url), null, $response['body'] );
@@ -74,6 +78,9 @@ class MediaRepository extends CRUDRepository {
         require_once( get_home_path() . '/wp/wp-admin/includes/image.php' );
         $attach_data = wp_generate_attachment_metadata( $attach_id, $file_path );
         wp_update_attachment_metadata( $attach_id,  $attach_data );
+        foreach($metadatas as $metadataKey => $metadataValue) {
+            update_post_meta( $attach_id, $metadataKey, $metadataValue);
+        }
 
         // Return attachment ID
         return $attach_id;
