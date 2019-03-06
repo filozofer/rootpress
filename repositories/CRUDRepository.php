@@ -87,7 +87,7 @@ class CRUDRepository {
 	 *
 	 * @return bool|\WP_Error
 	 */
-	public static function persist( RootpressModel $entity ) {
+	public static function persist( RootpressModel &$entity ) {
 
 		// Wordpress Post fields
 		$wpPostFields = [
