@@ -45,7 +45,7 @@ abstract class RootpressModel {
 
 	    // Declare each ACF fields on the entity
 	    foreach (static::$acf_mapping as $fieldName => $fieldKey) {
-	        $this->set($fieldName, new LazyACFLoader($fieldKey, $fieldName, $this->ID));
+	        $this->set($fieldName, new LazyACFLoader($fieldKey, $fieldName, (isset($this->taxonomy)) ? $this->taxonomy . '_' . $this->term_id : $this->ID));
         }
 
 	}
