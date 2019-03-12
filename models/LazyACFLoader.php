@@ -49,8 +49,16 @@ class LazyACFLoader {
      * Load the ACF value
      */
     public function getValue() {
+
+         // Get value from ACF
         $this->value = get_field($this->fieldKey, $this->entityID);
+
+        // Convert WP_Entity to real models
+        $this->value = (is_object($this->value) || (is_array($this->value) && !empty($this->value) && is_object($this->value[0]))) ? Rootpress::getEntityFromWPPost($this->value) : $this->value;
+
+        // Return value
         return $this->value;
+
     }
 
 }

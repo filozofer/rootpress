@@ -11,125 +11,171 @@ use WP_User;
  */
 abstract class RootpressUser extends WP_User {
 
-	/** @var $ID int */
-	public $ID = 0;
-	public static $linked_post_type = 'WP_User';
+    /**
+     * Associative array of the entity advanced custom fields
+     * Must follow : field_name => field_key
+     * @var array
+     */
+    public static $acf_mapping = [
+    ];
 
-	/**
-	 * Constructor for this model
-	 * Override this function in your child class to do post treatement after hydratation
-	 */
-	public function construct() {
-	}
+    /**
+     * Associative array of the entity advanced custom fields define dynamically
+     * Must follow : field_name => field_key
+     * @var array
+     */
+    public $acf_mapping_dynamic = [
+    ];
 
-	/**
-	 * Build object from array of data
-	 *
-	 * @param array $data
-	 *
-	 * @throws BuildEntityException
-	 */
-	public function build( array $data ) {
-		// Set all the field from $data
-		foreach ( $data as $fieldName => $fieldValue ) {
-			$this->set( $fieldName, $fieldValue );
-		}
+    /**
+     * RootpressUser constructor.
+     * Don't call parent __construct.
+     */
+    public function __construct() {
+    }
 
-	}
+    /**
+     * Constructor for this model
+     * Override this function in your child class to do post treatement after hydratation
+     */
+    public function construct() {
 
-	/**
-	 * Generic getter
-	 * Prefer using this to access your attribute
-	 *
-	 * @param string $paramName
-	 *
-	 * @return mixed
-	 */
-	public function get( $paramName ) {
+        // Declare each ACF fields on the entity
+        foreach (static::$acf_mapping as $fieldName => $fieldKey) {
+            $this->set($fieldName, new LazyACFLoader($fieldKey, $fieldName,  'user_' . $this->ID));
+        }
 
-		// Verify if there is a mapping name for this field, If yes, use this name
-		if ( array_key_exists( $paramName, $this->getAttributeMapping() ) ) {
-			$paramName = reset( $this->getAttributeMapping()[ $paramName ] );
-		}
+    }
 
-		// Is there a getter for this param ? If yes, use it !
-		$getter = 'get' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
-		if ( method_exists( $this, $getter ) ) {
-			return $this->$getter();
-		}
+    /**
+     * Hydrate object from array
+     *
+     * @param array $attributes
+     */
+    public function hydrate( array $attributes ) {
 
-		// Is param exist in user data attribute, return this value
-		if(isset($this->data) && isset($this->data->$paramName)) {
-			return $this->data->$paramName;
-		}
+        // Set all the field from $data
+        foreach ( $attributes as $fieldName => $fieldValue ) {
+            $this->set( $fieldName, $fieldValue );
+        }
 
-		return $this->$paramName;
-	}
+    }
 
-	/**
-	 * Generic setter
-	 * Prefer using this to change value of your attribute
-	 *
-	 * @param string $paramName
-	 * @param mixed $value
-	 *
-	 * @return mixed
-	 */
-	public function set( $paramName, $value ) {
-		if ( array_key_exists( $paramName, $this->getAttributeMapping() ) ) {
-			$paramName = reset( $this->getAttributeMapping()[ $paramName ]);
-		}
+    /**
+     * Generic getter
+     * Prefer using this to access your attribute
+     *
+     * @param string $paramName
+     *
+     * @return mixed
+     */
+    public function get( $paramName ) {
 
-		$setter = 'set' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
-		if ( method_exists( $this, $setter ) ) {
-			return $this->$setter( $value );
-		}
+        // Lazy load the ACF field value
+        if (isset($this->$paramName) && is_a($this->$paramName, LazyACFLoader::class)) {
+            $this->$paramName = $this->$paramName->getValue();
+        }
 
-		return $this->$paramName = $value;
-	}
+        // Verify if getter method exist for this attribute and avoid calling it again if it's already the getter which have call this method
+        $getter = 'get' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
+        if ( method_exists( $this, $getter ) && $getter != debug_backtrace()[1]['function']) {
+            return $this->$getter();
+        }
 
-	/**
-	 * Magic Method to call the generics getter and setter when accessing a private attribute of your class
-	 * If you want to respect encapsulation rules you need to declare all your object fields as private attribute inside your child class
-	 * When the hydrate process will try to hydrate your field, these magic function will call the generics getter and setter
-	 */
+        // Return attribute value default behaviour
+        return $this->$paramName;
 
-	/**
-	 * Magic getter
-	 *
-	 * @param $name
-	 */
-	public function __get( $name ) {
-		return $this->get( $name );
-	}
+    }
 
-	public function __set( $name, $value ) {
-		$this->set( $name, $value );
-	}
+    /**
+     * Generic setter
+     * Prefer using this to change value of your attribute
+     *
+     * @param string $paramName
+     * @param mixed $value
+     *
+     * @return mixed
+     */
+    public function set( $paramName, $value ) {
 
-	/**
-	 * Get ACF field key from field name
-	 *
-	 * @param $fieldName
-	 *
-	 * @return string
-	 * @throws \Exception
-	 */
-	public function getAcfFieldKeyFromName( $fieldName ) {
+        // Verify if setter method exist for this attribute
+        $setter = 'set' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $paramName ) ) );
+        if ( method_exists( $this, $setter ) ) {
+            return $this->$setter( $value );
+        }
 
-		// Method exist ?
-		if ( ! method_exists( $this, 'getAttributeMapping' ) ) {
-			throw new \Exception( 'You must implement getAttributeMapping in your model class before using this function.' );
-		}
+        // Set value default method
+        $this->$paramName = $value;
 
-		// Find field and return it
-		$fields = $this->getAttributeMapping();
-		if ( ! isset( $fields[ $fieldName ] ) ) {
-			throw new \Exception( 'Field not found in getAttributeMapping. Cannot retrieve associate field key.' );
-		}
+        // Return $this to allow chain set call if needed
+        return $this;
 
-		return key( $fields[ $fieldName ] );
+    }
 
-	}
+    /**
+     * Magic Method to call the generics getter and setter when accessing a private attribute of your class
+     * If you want to respect encapsulation rules you need to declare all your object fields as private attribute inside your child class
+     * When the hydrate process will try to hydrate your field, these magic function will call the generics getter and setter
+     */
+
+    /**
+     * Magic getter
+     *
+     * @param $name
+     * @return mixed
+     */
+    public function __get( $name ) {
+        return $this->get( $name );
+    }
+
+    /**
+     * Magic setter
+     *
+     * @param $name
+     * @return $this
+     */
+    public function __set( $name, $value ) {
+        return $this->set( $name, $value );
+    }
+
+    /**
+     * Magic isset
+     *
+     * @param $name
+     * @return boolean
+     */
+    public function __isset( $name ) {
+
+        // Verify if attribut exist
+        if (isset($this->$name)) {
+            return TRUE;
+        }
+
+        // Or if getter exist
+        $getter = 'get' . str_replace( ' ', '', ucwords( str_replace( '_', ' ', $name ) ) );
+        if ( method_exists( $this, $getter )) {
+            return TRUE;
+        }
+
+        // Not exist
+        return FALSE;
+
+    }
+
+    /**
+     * Load all the ACF fields values
+     * (mostly for debug purpose ! Lazy process is here for performance reason)
+     *
+     * @return RootpressModel
+     */
+    public function loadACF() {
+
+        // Declare each ACF fields on the entity
+        foreach (static::$acf_mapping as $fieldName => $fieldKey) {
+            $this->get($fieldName);
+        }
+        return $this;
+
+    }
 
 }
