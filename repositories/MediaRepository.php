@@ -54,7 +54,7 @@ class MediaRepository extends CRUDRepository {
         if($response['response']['code'] != 200 ) {
             return false;
         }
-        $upload = wp_upload_bits( basename($url), null, $response['body'] );
+        $upload = wp_upload_bits(basename(strtok($url, '?')), null, $response['body'] );
         if( !empty( $upload['error'] ) ) {
             return false;
         }
