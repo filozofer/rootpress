@@ -50,15 +50,22 @@ abstract class RootpressUser extends WP_User {
     /**
      * Hydrate object from array
      *
-     * @param array $attributes
+     * @param array $data Associative array of values to use for hydratation of the object
+     * @param array $fields Array of fields name to iterate only. Use this field if your use array of raw data like $_POST/$_GET for prevent security flaw
+     * @return RootpressUser
      */
-    public function hydrate( array $attributes ) {
+    public function hydrate( array $data, $fields = [] ) {
 
-        // Set all the field from $data
-        foreach ( $attributes as $fieldName => $fieldValue ) {
-            $this->set( $fieldName, $fieldValue );
+        // Get iteration list fields
+        $fieldsToIterate = (!empty($fields)) ? $fields : array_keys($data);
+
+        // Call the setter for each field
+        foreach ( $fieldsToIterate as $fieldName ) {
+            $this->set( $fieldName, $data[$fieldName] );
         }
 
+        // Return current entity
+        return $this;
     }
 
     /**
