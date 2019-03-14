@@ -51,10 +51,10 @@ class Rootpress
         add_action('init', ['Rootpress\Rootpress', 'modelsSystem'], 99);
 
 	    // Load migrations
-	    self::loadMigrations();
+        add_action('init', ['Rootpress\Rootpress', 'loadMigrations'], 99);
 
         // Launch Rootpress Hooks according to rootpress configuration
-        self::loadHooks();
+        add_action('init', ['Rootpress\Rootpress', 'loadHooks'], 1);
 
     }
 
