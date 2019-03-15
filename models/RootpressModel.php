@@ -188,4 +188,11 @@ abstract class RootpressModel {
 
     }
 
+    /**
+     * Get content of WP_Post filter by the_content filter.
+     */
+    public function getContent() {
+        return apply_filters('the_content', (isset($this->post_content)) ? $this->post_content : '');
+    }
+
 }
