@@ -20,10 +20,7 @@ class OptionRepository {
         $option = get_field($key, 'option');
 
         // Convert WP_Post if necessary
-        $option = (
-            is_a($option, 'WP_Post') ||
-            (is_array($option) && isset($option[0]) && is_a($option[0], 'WP_Post'))
-        ) ? Rootpress::getEntityFromWPPost($option) : $option;
+        $option = self::convertToEntity($option);
 
         // Return the option values
         return $option;
@@ -42,6 +39,31 @@ class OptionRepository {
     		$results[$key] = self::findOne($key);
     	}
     	return $results;
+    }
+
+    /**
+     * Find recursively entities in option value and convert them
+     */
+    protected static function convertToEntity($option) {
+
+        // Case option is an entity
+        if(is_a($option, 'WP_Post') || is_a($option, 'WP_User')) {
+            return Rootpress::getEntityFromWPPost($option);
+        }
+        // Case option is an array of entities
+        else if(is_array($option) && isset($option[0]) && is_a($option[0], 'WP_Post')) {
+            return Rootpress::getEntityFromWPPost($option);
+        }
+        // Case option is an array and we want to be recursive
+        else if(is_array($option)) {
+            foreach ($option as $subOptionKey => $subOptionValue) {
+                $option[$subOptionKey] = self::convertToEntity($subOptionValue);
+            }
+            return $option;
+        }
+
+        // No conversion applied
+        return $option;
     }
     
 }
