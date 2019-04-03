@@ -2,6 +2,8 @@
 
 namespace Rootpress\models;
 
+use Rootpress\Rootpress;
+
 /**
  * Class LazyACFLoader
  * Allow to load ACF fields only on demand when retrieving a WP_Entity
@@ -54,7 +56,7 @@ class LazyACFLoader {
         $this->value = get_field($this->fieldKey, $this->entityID);
 
         // Convert WP_Entity to real models
-        $this->value = (is_object($this->value) || (is_array($this->value) && !empty($this->value) && is_object($this->value[0]))) ? Rootpress::getEntityFromWPPost($this->value) : $this->value;
+        $this->value = (is_object($this->value) || (is_array($this->value) && !empty($this->value) && isset($this->value[0]) && is_object($this->value[0]))) ? Rootpress::getEntityFromWPPost($this->value) : $this->value;
 
         // Return value
         return $this->value;
