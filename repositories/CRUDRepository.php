@@ -150,6 +150,7 @@ class CRUDRepository {
 
         // Action to allow hooking after entity is persist (different from native action "save_post" because ACF fields are saved too)
         do_action('rootpress_post_persist_entity', $entity->ID, $entity);
+        do_action('rootpress_post_persist_entity_' . $entity->post_type, $entity->ID, $entity);
 
         // Success !
 		return TRUE;
