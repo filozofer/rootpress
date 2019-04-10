@@ -75,7 +75,7 @@ class MediaRepository extends CRUDRepository {
         $attach_id = wp_insert_attachment( $post_info, $file_path, $parent_post_id );
 
         // Handle metadata
-        require_once( get_home_path() . '/wp/wp-admin/includes/image.php' );
+        require_once( ABSPATH . '/wp-admin/includes/image.php' );
         $attach_data = wp_generate_attachment_metadata( $attach_id, $file_path );
         wp_update_attachment_metadata( $attach_id,  $attach_data );
         foreach($metadatas as $metadataKey => $metadataValue) {
